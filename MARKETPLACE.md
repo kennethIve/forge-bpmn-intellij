@@ -1,7 +1,7 @@
 # JetBrains Marketplace + GitHub Actions
 
 Plugin id: `com.forge.bpmn`  
-Version: `0.3.1`
+Version: `0.3.2`
 
 ## 1. Push to GitHub
 
@@ -54,7 +54,7 @@ Wait until Marketplace approves that listing.
 
 1. Bump `pluginVersion` in `gradle.properties` (Marketplace rejects duplicate versions).
 2. GitHub → **Releases** → **Draft a new release**
-3. Tag `v0.3.1` (or the new version) and publish
+3. Tag `v0.3.2` (or the new version) and publish
 4. Workflow **Publish to JetBrains Marketplace** runs `gradle publishPlugin`
 5. Optional: **Actions → Publish to JetBrains Marketplace → Run workflow**
 

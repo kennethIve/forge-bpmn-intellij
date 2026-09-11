@@ -18,6 +18,8 @@ import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
 import java.awt.BorderLayout
+import java.awt.event.ComponentAdapter
+import java.awt.event.ComponentEvent
 import java.beans.PropertyChangeListener
 import javax.swing.JComponent
 import javax.swing.JLabel
@@ -77,6 +79,11 @@ class BpmnFileEditor(
             FileDocumentManager.getInstance().getDocument(file)?.addDocumentListener(documentListener)
             b.loadURL(BpmnAssets.root.resolve("index.html").toUri().toString())
             panel.add(b.component, BorderLayout.CENTER)
+            panel.addComponentListener(object : ComponentAdapter() {
+                override fun componentResized(e: ComponentEvent) {
+                    if (loaded) SwingUtilities.invokeLater { fitViewport() }
+                }
+            })
         }
         panel.add(BpmnEditorTabs.bar(project, file, "bpmn"), BorderLayout.SOUTH)
     }
@@ -103,6 +110,16 @@ class BpmnFileEditor(
         val xml = String(file.contentsToByteArray(), Charsets.UTF_8)
         b.cefBrowser.executeJavaScript(
             "window.__loadXml && window.__loadXml(" + jsString(xml) + ");",
+            b.cefBrowser.url,
+            0,
+        )
+    }
+
+    private fun fitViewport() {
+        val b = browser ?: return
+        if (!loaded) return
+        b.cefBrowser.executeJavaScript(
+            "window.__fit && window.__fit();",
             b.cefBrowser.url,
             0,
         )

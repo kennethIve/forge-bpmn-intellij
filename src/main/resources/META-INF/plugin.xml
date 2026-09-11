@@ -2,7 +2,7 @@
 <idea-plugin>
   <id>com.forge.bpmn</id>
   <name>Forge BPMN</name>
-  <version>0.3.1</version>
+  <version>0.3.2</version>
   <vendor email="plugins@example.com" url="https://github.com/kennethIve/forge-bpmn-intellij">Forge</vendor>
 
   <description><![CDATA[
@@ -13,7 +13,7 @@
 
   <change-notes><![CDATA[
     <ul>
-      <li>Open-ended IDE compatibility (IntelliJ 2024.3 through 2026+).</li>
+      <li>XML editor implements getFile; file icon fits the editor tab; diagram fills the editor.</li>
       <li>Bottom XML / BPMN switch under the editor, with round-trip sync.</li>
       <li>Camunda Modeler-style diagram editor, properties panel, and BPMN syntax lint.</li>
     </ul>

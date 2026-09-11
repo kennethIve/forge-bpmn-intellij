@@ -8,7 +8,6 @@ import com.intellij.util.ui.JBUI
 import java.awt.FlowLayout
 import javax.swing.JButton
 import javax.swing.JComponent
-import javax.swing.JLabel
 import javax.swing.JPanel
 
 object BpmnEditorTabs {
@@ -16,13 +15,17 @@ object BpmnEditorTabs {
     const val XML_ID = "forge-bpmn-xml"
 
     fun bar(project: Project, file: VirtualFile, current: String): JComponent {
-        val bar = JPanel(FlowLayout(FlowLayout.LEFT, 6, 4))
+        val bar = JPanel(FlowLayout(FlowLayout.LEFT, 4, 2))
         bar.border = JBUI.Borders.customLine(JBColor.border(), 1, 0, 0, 0)
 
         val bpmn = JButton("BPMN")
         val xml = JButton("XML")
         bpmn.toolTipText = "Switch to the BPMN diagram editor"
         xml.toolTipText = "Switch to XML source"
+        bpmn.isFocusable = false
+        xml.isFocusable = false
+        bpmn.margin = JBUI.insets(2, 10)
+        xml.margin = JBUI.insets(2, 10)
         bpmn.isEnabled = current != "bpmn"
         xml.isEnabled = current != "xml"
         bpmn.addActionListener {
@@ -32,13 +35,8 @@ object BpmnEditorTabs {
             FileEditorManager.getInstance(project).setSelectedEditor(file, XML_ID)
         }
 
-        val hint = JLabel("One-click XML / BPMN")
-        hint.foreground = JBColor.GRAY
-        hint.border = JBUI.Borders.empty(0, 8, 0, 0)
-
         bar.add(bpmn)
         bar.add(xml)
-        bar.add(hint)
         return bar
     }
 }
