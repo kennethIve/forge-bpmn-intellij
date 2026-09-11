@@ -1,29 +1,46 @@
-# Test Forge BPMN in IntelliJ
+# Local development (Forge BPMN)
 
 Plugin id: `com.forge.bpmn`  
-Needs IntelliJ IDEA 2024.3 or later (2025 / 2026 included).
+IntelliJ IDEA 2024.3+ (2026 included). JDK 17+.
 
-**Do not install the source ZIP** (the one with `build.gradle.kts`). That is a Gradle project, not a plugin.
+Development happens on the **`dev`** branch. GitHub Actions **does not** build `dev` — only `main`.
 
-**Do not install a GitHub Actions artifact download as-is.** The website wraps the plugin in a second zip.
+## Fastest loop (no zip, no Install from Disk)
 
-## Install from GitHub Releases (your daily IntelliJ)
+This starts a **second IntelliJ** with the plugin already loaded. Your daily IDE is untouched.
 
-1. Download `forge-bpmn-*.zip` from [Releases](https://github.com/kennethIve/forge-bpmn-intellij/releases) — the file that contains a `lib/` folder, not the source tree.
-2. IntelliJ → **Settings → Plugins** → gear → **Install Plugin from Disk…**
-3. Pick that zip. Restart the IDE.
-4. Open a `.bpmn` file. Bottom of the editor: **BPMN** and **XML**.
+1. Clone and check out `dev`:
 
-If IntelliJ says the plugin is incompatible, you grabbed an old build capped at 2025.3. Use 0.3.2 or later.
+```
+git clone https://github.com/kennethIve/forge-bpmn-intellij.git
+cd forge-bpmn-intellij
+git checkout dev
+```
 
-## Sandbox IDE (does not touch your daily install)
+2. IntelliJ: **File → Open** the folder that contains `build.gradle.kts` (project root).
+3. Trust the Gradle project. Wait until indexing finishes (first time downloads the IntelliJ SDK).
+4. Top-right run configuration **Run Plugin** → green play (or Gradle task `runIde`).
+5. In the **new** IDE window, open `examples/refund-request.bpmn`.
 
-1. Clone or unzip the **source** project. **File → Open** the folder with `build.gradle.kts`.
-2. Trust Gradle. Run **Run Plugin**.
-3. In the new IDE window, open a `.bpmn` file.
+After you change Kotlin/HTML, click **Run Plugin** again. That is the whole loop.
 
-## Missing diagram assets after a git clone?
+If the canvas is empty on first run, Gradle will fetch modeler assets automatically (needs Node once). Or run:
 
 ```
 bash scripts/fetch-modeler-assets.sh
 ```
+
+## Optional: install into your daily IntelliJ
+
+Only if you want the plugin in the same IDE you work in (not needed for development):
+
+```
+bash scripts/fetch-modeler-assets.sh
+# Gradle tool window → buildPlugin
+```
+
+Then Settings → Plugins → gear → **Install Plugin from Disk** → `build/distributions/forge-bpmn-*.zip`.
+
+## GitHub Releases zip
+
+Use this only to test a published build: [Releases](https://github.com/kennethIve/forge-bpmn-intellij/releases).

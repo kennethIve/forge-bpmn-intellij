@@ -51,3 +51,14 @@ intellijPlatform {
         )
     }
 }
+
+val fetchModelerAssets by tasks.registering(Exec::class) {
+    workingDir = rootDir
+    commandLine("bash", "scripts/fetch-modeler-assets.sh")
+    outputs.file("src/main/resources/bpmn-editor/camunda-cloud-modeler.production.min.js")
+    onlyIf { !file("src/main/resources/bpmn-editor/camunda-cloud-modeler.production.min.js").exists() }
+}
+
+tasks.matching { it.name.contains("prepareSandbox") || it.name == "buildPlugin" }.configureEach {
+    dependsOn(fetchModelerAssets)
+}

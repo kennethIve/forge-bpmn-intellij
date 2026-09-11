@@ -5,5 +5,3 @@ out/
 *.iml
 .DS_Store
 .intellijPlatform/
-src/main/resources/bpmn-editor/camunda-cloud-modeler.production.min.js
-src/main/resources/bpmn-editor/assets/
