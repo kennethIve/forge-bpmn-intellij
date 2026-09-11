@@ -24,6 +24,15 @@
     .djs-palette .separator { border-color: var(--palette-border) !important; }
     .djs-popup, .djs-context-pad .entry { background: var(--palette) !important; color: var(--palette-fg) !important; border-color: var(--palette-border) !important; }
     .djs-connection .djs-visual > path { stroke: var(--flow) !important; }
+    html.dark-diagram .djs-connection .djs-visual > path { stroke: var(--flow) !important; }
+    html.dark-diagram marker path, html.dark-diagram marker polygon { fill: var(--flow) !important; stroke: var(--flow) !important; }
+    html.dark-diagram .djs-element[data-element-id$="_label"] text,
+    html.dark-diagram .djs-element[data-element-id$="_label"] .djs-label { fill: #ECEEF1 !important; }
+    html.dark-diagram .djs-palette .entry svg, html.dark-diagram .djs-context-pad .entry svg { filter: invert(1); }
+    html.dark-diagram .bjs-powered-by { filter: invert(1); opacity: .5; }
+    html.dark-diagram .djs-minimap, html.dark-diagram .djs-overlay button {
+      background: #3C3F44 !important; color: #DFE1E5 !important; border: 1px solid #4A4E55 !important;
+    }
     .bpmn-lint-mark { display: block; width: 10px; height: 10px; border-radius: 99px; box-shadow: 0 0 0 2px var(--canvas); }
     .bpmn-lint-error { background: #c45c58; }
     .bpmn-lint-warning { background: #c4a574; }
@@ -158,12 +167,27 @@
     window.__fit = fit;
     window.__applyTheme = function (t) {
       var root = document.documentElement;
-      root.classList.toggle("dark", !!t.dark);
+      var dark = !!t.dark;
+      root.classList.toggle("dark", dark);
+      root.classList.toggle("dark-diagram", dark);
       ["bg","panel","fg","muted","border","input","hover","accent"].forEach(function (k) {
         if (t[k]) root.style.setProperty("--" + k, t[k]);
       });
-      root.style.setProperty("--canvas", "#F4F5F7");
-      root.style.setProperty("--flow", "#1E1F22");
+      if (dark) {
+        root.style.setProperty("--canvas", "#2F3237");
+        root.style.setProperty("--flow", "#D5DAE3");
+        root.style.setProperty("--palette", "#2B2D30");
+        root.style.setProperty("--palette-fg", "#DFE1E5");
+        root.style.setProperty("--palette-border", "#43454A");
+        root.style.setProperty("--palette-hover", "#3C3F44");
+      } else {
+        root.style.setProperty("--canvas", "#F4F5F7");
+        root.style.setProperty("--flow", "#1E1F22");
+        root.style.setProperty("--palette", "#F7F8FA");
+        root.style.setProperty("--palette-fg", "#1E1F22");
+        root.style.setProperty("--palette-border", "#D3D5DB");
+        root.style.setProperty("--palette-hover", "#EBECF0");
+      }
     };
     (function setupPropsToggle() {
       var app = document.getElementById("app");
