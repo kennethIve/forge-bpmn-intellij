@@ -36,7 +36,7 @@
                 anchor="left"
                 secondary="false"
                 canCloseContents="false"
-                icon="/icons/bpmnToolWindow.svg"
+                icon="/META-INF/bpmnFileIcon.svg"
                 factoryClass="com.forge.bpmn.BpmnToolWindowFactory"/>
     <annotator language="XML" implementationClass="com.forge.bpmn.BpmnAnnotator"/>
     <localInspection language="XML"
@@ -53,7 +53,7 @@
             class="com.forge.bpmn.ActivateBpmnToolWindowAction"
             text="BPMN"
             description="Show the BPMN files tool window"
-            icon="/icons/bpmnToolWindow.svg">
+            icon="/META-INF/bpmnFileIcon.svg">
       <add-to-group group-id="ToolWindowsGroup" anchor="last"/>
     </action>
   </actions>
