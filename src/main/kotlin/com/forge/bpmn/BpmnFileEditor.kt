@@ -1,6 +1,8 @@
 package com.forge.bpmn
 
+import com.intellij.ide.ui.LafManagerListener
 import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.fileEditor.FileDocumentManager
@@ -10,6 +12,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.UserDataHolderBase
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.ui.JBColor
 import com.intellij.ui.jcef.JBCefApp
 import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.ui.jcef.JBCefBrowserBase
@@ -18,6 +21,7 @@ import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
 import java.awt.BorderLayout
+import java.awt.Color
 import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
 import java.beans.PropertyChangeListener
@@ -36,6 +40,7 @@ class BpmnFileEditor(
     private var applyingFromJs = false
     private var loaded = false
     private var diagramActive = true
+    private val themeConnection = project.messageBus.connect()
     private val documentListener = object : DocumentListener {
         override fun documentChanged(event: DocumentEvent) {
             if (!applyingFromJs && loaded && diagramActive) {
@@ -45,11 +50,13 @@ class BpmnFileEditor(
     }
 
     init {
+        panel.background = JBColor.PanelBackground
         if (!JBCefApp.isSupported()) {
             panel.add(JLabel("JCEF is required for the BPMN diagram editor.", SwingConstants.CENTER), BorderLayout.CENTER)
         } else {
             val b = JBCefBrowser()
             browser = b
+            b.component.background = JBColor.PanelBackground
             val query = JBCefJSQuery.create(b as JBCefBrowserBase)
             query.addHandler { xml ->
                 applyingFromJs = true
@@ -73,7 +80,10 @@ class BpmnFileEditor(
                     loaded = true
                     val inject = "window.__onXmlChange = function(xml) { " + query.inject("xml") + " };"
                     br?.executeJavaScript(inject, br.url, 0)
-                    pushXml()
+                    SwingUtilities.invokeLater {
+                        applyTheme()
+                        pushXml()
+                    }
                 }
             }, b.cefBrowser)
             FileDocumentManager.getInstance().getDocument(file)?.addDocumentListener(documentListener)
@@ -83,6 +93,9 @@ class BpmnFileEditor(
                 override fun componentResized(e: ComponentEvent) {
                     if (loaded) SwingUtilities.invokeLater { fitViewport() }
                 }
+            })
+            themeConnection.subscribe(LafManagerListener.TOPIC, LafManagerListener {
+                SwingUtilities.invokeLater { applyTheme() }
             })
         }
     }
@@ -124,6 +137,42 @@ class BpmnFileEditor(
         )
     }
 
+    private fun hex(c: Color): String {
+        return String.format("#%02x%02x%02x", c.red, c.green, c.blue)
+    }
+
+    private fun applyTheme() {
+        val b = browser ?: return
+        if (!loaded) return
+        val dark = !JBColor.isBright()
+        val scheme = EditorColorsManager.getInstance().globalScheme
+        val canvas = hex(scheme.defaultBackground)
+        val fg = hex(scheme.defaultForeground)
+        val panelBg = hex(JBColor.namedColor("Panel.background", JBColor.PanelBackground))
+        val border = hex(JBColor.namedColor("Borders.color", JBColor.border()))
+        val muted = hex(JBColor.namedColor("Label.infoForeground", JBColor.GRAY))
+        val input = hex(JBColor.namedColor("TextField.background", scheme.defaultBackground))
+        val hover = hex(JBColor.namedColor("ActionButton.hoverBackground", JBColor.GRAY))
+        val accent = hex(JBColor.namedColor("Link.activeForeground", JBColor.BLUE))
+        panel.background = JBColor.PanelBackground
+        b.component.background = JBColor.PanelBackground
+        b.cefBrowser.executeJavaScript(
+            "window.__applyTheme && window.__applyTheme({dark:" + dark +
+                ",bg:" + jsString(panelBg) +
+                ",canvas:" + jsString(canvas) +
+                ",panel:" + jsString(panelBg) +
+                ",fg:" + jsString(fg) +
+                ",muted:" + jsString(muted) +
+                ",border:" + jsString(border) +
+                ",input:" + jsString(input) +
+                ",hover:" + jsString(hover) +
+                ",accent:" + jsString(accent) +
+                "});",
+            b.cefBrowser.url,
+            0,
+        )
+    }
+
     fun setDiagramActive(value: Boolean) {
         diagramActive = value
         if (value) SwingUtilities.invokeLater { pushXml() }
@@ -143,6 +192,7 @@ class BpmnFileEditor(
     override fun removePropertyChangeListener(listener: PropertyChangeListener) {}
     override fun getFile(): VirtualFile = file
     override fun dispose() {
+        themeConnection.disconnect()
         FileDocumentManager.getInstance().getDocument(file)?.removeDocumentListener(documentListener)
         browser?.let { Disposer.dispose(it) }
     }
