@@ -32,6 +32,10 @@
               extensions="bpmn"/>
     <fileEditorProvider implementation="com.forge.bpmn.BpmnFileEditorProvider"/>
     <fileEditorProvider implementation="com.forge.bpmn.BpmnXmlEditorProvider"/>
+    <toolWindow id="BPMN"
+                anchor="left"
+                icon="/META-INF/bpmnFileIcon.svg"
+                factoryClass="com.forge.bpmn.BpmnToolWindowFactory"/>
     <annotator language="XML" implementationClass="com.forge.bpmn.BpmnAnnotator"/>
     <localInspection language="XML"
                      shortName="BpmnSyntax"
