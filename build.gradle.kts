@@ -21,6 +21,7 @@ repositories {
 dependencies {
     intellijPlatform {
         intellijIdea("2026.2")
+        bundledPlugin("com.intellij.modules.jcef")
         testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
     }
 }
