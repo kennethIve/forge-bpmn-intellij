@@ -19,7 +19,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: zulu
-          java-version: 17
+          java-version: 25
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
@@ -29,7 +29,7 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: "8.13"
+          gradle-version: "9.1.0"
       - name: Build plugin
         run: gradle buildPlugin --stacktrace
       - name: Upload distribution
