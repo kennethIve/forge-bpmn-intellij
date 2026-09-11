@@ -3,12 +3,12 @@ package com.forge.bpmn
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.DumbAware
+import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.vfs.VfsUtilCore
@@ -18,10 +18,10 @@ import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
+import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.ColoredTreeCellRenderer
 import com.intellij.ui.DoubleClickListener
 import com.intellij.ui.SimpleTextAttributes
-import com.intellij.ui.TreeSpeedSearch
 import com.intellij.ui.content.ContentFactory
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.JBUI
@@ -38,11 +38,30 @@ import javax.swing.tree.DefaultTreeModel
 import javax.swing.tree.TreeSelectionModel
 
 class BpmnToolWindowFactory : ToolWindowFactory, DumbAware {
+    override fun shouldBeAvailable(project: Project): Boolean = true
+
+    override fun init(toolWindow: ToolWindow) {
+        toolWindow.setToHideOnEmptyContent(false)
+        toolWindow.isAvailable = true
+        toolWindow.isShowStripeButton = true
+        toolWindow.stripeTitle = "BPMN"
+        toolWindow.setIcon(BpmnIcons.FILE)
+    }
+
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-        val explorer = BpmnExplorer(project)
+        val explorer = BpmnExplorer(project, toolWindow.disposable)
         val content = ContentFactory.getInstance().createContent(explorer, "", false)
-        content.setDisposer(explorer)
+        content.isCloseable = false
         toolWindow.contentManager.addContent(content)
+        toolWindow.isAvailable = true
+        toolWindow.isShowStripeButton = true
+    }
+}
+
+class ActivateBpmnToolWindowAction : DumbAwareAction() {
+    override fun actionPerformed(e: AnActionEvent) {
+        val project = e.project ?: return
+        ToolWindowManager.getInstance(project).getToolWindow("BPMN")?.show()
     }
 }
 
@@ -55,12 +74,16 @@ private data class BpmnNode(
     override fun toString(): String = name
 }
 
-class BpmnExplorer(private val project: Project) : JPanel(BorderLayout()), Disposable {
+class BpmnExplorer(
+    private val project: Project,
+    parent: Disposable,
+) : JPanel(BorderLayout()) {
     private val tree = Tree()
 
     init {
         tree.isRootVisible = true
         tree.showsRootHandles = true
+        tree.emptyText.text = "No .bpmn files"
         tree.selectionModel.selectionMode = TreeSelectionModel.SINGLE_TREE_SELECTION
         tree.cellRenderer = object : ColoredTreeCellRenderer() {
             override fun customizeCellRenderer(
@@ -81,7 +104,6 @@ class BpmnExplorer(private val project: Project) : JPanel(BorderLayout()), Dispo
                 }
             }
         }
-        TreeSpeedSearch.installOn(tree)
         TreeUtil.installActions(tree)
         object : DoubleClickListener() {
             override fun onDoubleClick(event: MouseEvent): Boolean {
@@ -95,7 +117,7 @@ class BpmnExplorer(private val project: Project) : JPanel(BorderLayout()), Dispo
             }
         })
 
-        val refresh = object : AnAction("Refresh", "Reload BPMN files", AllIcons.Actions.Refresh), DumbAware {
+        val refresh = object : DumbAwareAction("Refresh", "Reload BPMN files", AllIcons.Actions.Refresh) {
             override fun actionPerformed(e: AnActionEvent) {
                 reload()
             }
@@ -110,7 +132,7 @@ class BpmnExplorer(private val project: Project) : JPanel(BorderLayout()), Dispo
         add(toolbar.component, BorderLayout.NORTH)
         add(JScrollPane(tree).apply { border = JBUI.Borders.empty() }, BorderLayout.CENTER)
 
-        project.messageBus.connect(this).subscribe(
+        project.messageBus.connect(parent).subscribe(
             VirtualFileManager.VFS_CHANGES,
             object : BulkFileListener {
                 override fun after(events: List<VFileEvent>) {
@@ -185,6 +207,4 @@ class BpmnExplorer(private val project: Project) : JPanel(BorderLayout()), Dispo
         }
         return root
     }
-
-    override fun dispose() {}
 }
