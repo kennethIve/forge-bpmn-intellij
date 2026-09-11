@@ -14,7 +14,7 @@ Needs IntelliJ IDEA 2024.3 or later (2025 / 2026 included).
 3. Pick that zip. Restart the IDE.
 4. Open a `.bpmn` file. Bottom of the editor: **BPMN** and **XML**.
 
-If IntelliJ says the plugin is incompatible, you grabbed an old build capped at 2025.3. Use 0.3.1 or later.
+If IntelliJ says the plugin is incompatible, you grabbed an old build capped at 2025.3. Use 0.3.2 or later.
 
 ## Sandbox IDE (does not touch your daily install)
 

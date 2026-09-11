@@ -9,7 +9,7 @@ import javax.swing.JPanel
 
 class BpmnXmlEditor(
     project: Project,
-    file: VirtualFile,
+    private val file: VirtualFile,
     private val delegate: TextEditor,
 ) : TextEditor by delegate {
     private val root = JPanel(BorderLayout())
@@ -20,6 +20,7 @@ class BpmnXmlEditor(
     }
 
     override fun getName(): String = "XML"
+    override fun getFile(): VirtualFile = file
     override fun getComponent(): JComponent = root
     override fun getPreferredFocusedComponent(): JComponent {
         return delegate.preferredFocusedComponent ?: delegate.component

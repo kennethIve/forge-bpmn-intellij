@@ -6,15 +6,16 @@
   <title>BPMN</title>
   <link rel="stylesheet" href="assets/camunda-cloud-modeler.css"/>
   <style>
-    html, body { height: 100%; margin: 0; background: #f8f9fb; color: #1c2128; font: 13px/1.45 "IBM Plex Sans", "Segoe UI", sans-serif; }
-    #app { display: flex; flex-direction: column; height: 100%; }
-    #bar { display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 10px; border-bottom: 1px solid #d5dae3; background: #fff; flex-shrink: 0; }
-    #bar button { height: 28px; padding: 0 10px; border: 1px solid #d5dae3; background: #fff; color: #1c2128; border-radius: 6px; cursor: pointer; font: inherit; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #f8f9fb; color: #1c2128; font: 13px/1.45 "IBM Plex Sans", "Segoe UI", sans-serif; }
+    #app { position: absolute; inset: 0; display: flex; flex-direction: column; }
+    #bar { display: flex; align-items: center; gap: 6px; height: 36px; padding: 0 10px; border-bottom: 1px solid #d5dae3; background: #fff; flex-shrink: 0; }
+    #bar button { height: 26px; padding: 0 10px; border: 1px solid #d5dae3; background: #fff; color: #1c2128; border-radius: 6px; cursor: pointer; font: inherit; }
     #bar button:hover { background: #f3f5f7; }
     #file { margin-left: auto; color: #5c6570; font-size: 12px; }
-    #main { display: flex; flex: 1; min-height: 0; }
-    #canvas { flex: 1; min-width: 0; min-height: 0; }
-    #properties { width: 300px; border-left: 1px solid #d5dae3; background: #f8f8f8; overflow: hidden; }
+    #main { display: flex; flex: 1; min-height: 0; min-width: 0; position: relative; }
+    #canvas { position: relative; flex: 1; min-width: 0; min-height: 0; }
+    #canvas .bjs-container, #canvas .djs-container { position: absolute !important; inset: 0; width: auto !important; height: auto !important; }
+    #properties { width: 280px; flex-shrink: 0; border-left: 1px solid #d5dae3; background: #f8f8f8; overflow: hidden; }
     #properties .bio-properties-panel-container, #properties .bio-properties-panel { height: 100%; }
     #problems { height: 148px; border-top: 1px solid #d5dae3; background: #fff; display: flex; flex-direction: column; flex-shrink: 0; }
     #problems h2 { margin: 0; padding: 8px 12px; font-size: 11px; letter-spacing: .14em; color: #5c6570; border-bottom: 1px solid #d5dae3; font-weight: 600; }
@@ -26,7 +27,6 @@
     .bpmn-lint-mark { display: block; width: 10px; height: 10px; border-radius: 99px; box-shadow: 0 0 0 2px #fff; }
     .bpmn-lint-error { background: #c45c58; }
     .bpmn-lint-warning { background: #c4a574; }
-    .bjs-container, .djs-container { height: 100%; }
   </style>
 </head>
 <body>
@@ -192,13 +192,23 @@
     modeler.on("commandStack.changed", persist);
     document.getElementById("undo").addEventListener("click", function () { modeler.get("commandStack").undo(); });
     document.getElementById("redo").addEventListener("click", function () { modeler.get("commandStack").redo(); });
-    document.getElementById("fit").addEventListener("click", function () { modeler.get("canvas").zoom("fit-viewport", "auto"); });
+    document.getElementById("fit").addEventListener("click", function () { fit(); });
+
+    function fit() {
+      try { modeler.get("canvas").zoom("fit-viewport", "auto"); } catch (e) {}
+    }
+    window.__fit = fit;
+    window.addEventListener("resize", function () { fit(); });
+    if (window.ResizeObserver) {
+      new ResizeObserver(function () { fit(); }).observe(document.getElementById("canvas"));
+    }
 
     window.__loadXml = async function (xml) {
       applying = true;
       try {
         await modeler.importXML(xml);
-        modeler.get("canvas").zoom("fit-viewport", "auto");
+        fit();
+        window.setTimeout(fit, 80);
         paintLint(lintBpmnXml(xml));
       } catch (err) {
         paintLint(lintBpmnXml(xml));

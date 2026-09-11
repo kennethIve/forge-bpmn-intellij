@@ -5,5 +5,5 @@ import javax.swing.Icon
 
 object BpmnIcons {
     @JvmField
-    val FILE: Icon = IconLoader.getIcon("/META-INF/pluginIcon.svg", BpmnIcons::class.java)
+    val FILE: Icon = IconLoader.getIcon("/META-INF/bpmnFileIcon.svg", BpmnIcons::class.java)
 }
