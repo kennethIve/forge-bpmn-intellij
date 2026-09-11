@@ -7,10 +7,9 @@
   <link rel="stylesheet" href="assets/camunda-cloud-modeler.css"/>
   <style>
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: var(--bg, #f7f8fa); color: var(--fg, #1e1f22); font: 13px/1.45 "JetBrains Sans", "IBM Plex Sans", "Segoe UI", sans-serif; }
-    :root { --bg:#f7f8fa; --canvas:#f2f3f5; --panel:#f7f8fa; --fg:#1e1f22; --muted:#6c707e; --border:#d3d5db; --input:#ffffff; --hover:#ebecf0; --accent:#3574f0; --flow:#1e1f22; --ext-label:#1e1f22; }
+    :root { --bg:#f7f8fa; --canvas:#F4F5F7; --panel:#f7f8fa; --fg:#1e1f22; --muted:#6c707e; --border:#d3d5db; --input:#ffffff; --hover:#ebecf0; --accent:#3574f0; --flow:#1e1f22; --palette:#F7F8FA; --palette-fg:#1E1F22; --palette-border:#D3D5DB; --palette-hover:#EBECF0; }
     #app { position: absolute; inset: 0; display: flex; min-height: 0; min-width: 0; background: var(--bg); }
-    #canvas-wrap { position: relative; flex: 1; min-width: 0; min-height: 0; }
-    #canvas { position: absolute; inset: 0; background: var(--canvas); }
+    #canvas { position: relative; flex: 1; min-width: 0; min-height: 0; background: var(--canvas); }
     #canvas .bjs-container, #canvas .djs-container { position: absolute !important; inset: 0; width: auto !important; height: auto !important; background: var(--canvas) !important; }
     #toggle-props { width: 18px; flex-shrink: 0; border: 0; border-left: 1px solid var(--border); background: var(--panel); color: var(--muted); cursor: pointer; font: 14px/1 "JetBrains Mono", monospace; padding: 0; }
     #toggle-props:hover { background: var(--hover); color: var(--fg); }
@@ -19,22 +18,12 @@
     #properties .bio-properties-panel-container, #properties .bio-properties-panel { height: 100%; background: var(--panel) !important; color: var(--fg) !important; }
     .bio-properties-panel-header, .bio-properties-panel-group, .bio-properties-panel-group-header, .bio-properties-panel-scroll-container { background: var(--panel) !important; color: var(--fg) !important; border-color: var(--border) !important; }
     .bio-properties-panel-input, .bio-properties-panel select, .bio-properties-panel textarea, .bio-properties-panel input { background: var(--input) !important; color: var(--fg) !important; border-color: var(--border) !important; }
-    .djs-palette { background: var(--panel) !important; border-color: var(--border) !important; color: var(--fg) !important; }
-    .djs-palette .entry { color: var(--fg) !important; fill: var(--fg) !important; }
-    .djs-palette .entry:hover { background: var(--hover) !important; }
-    .djs-palette .separator { border-color: var(--border) !important; }
-    .djs-popup, .djs-context-pad .entry { background: var(--panel) !important; color: var(--fg) !important; border-color: var(--border) !important; }
-    html.dark .djs-palette .entry svg, html.dark .djs-context-pad .entry svg { filter: invert(1); }
+    .djs-palette { background: var(--palette) !important; border-color: var(--palette-border) !important; color: var(--palette-fg) !important; }
+    .djs-palette .entry { color: var(--palette-fg) !important; fill: var(--palette-fg) !important; }
+    .djs-palette .entry:hover { background: var(--palette-hover) !important; }
+    .djs-palette .separator { border-color: var(--palette-border) !important; }
+    .djs-popup, .djs-context-pad .entry { background: var(--palette) !important; color: var(--palette-fg) !important; border-color: var(--palette-border) !important; }
     .djs-connection .djs-visual > path { stroke: var(--flow) !important; }
-    html.dark-diagram .djs-connection .djs-visual > path { stroke: var(--flow) !important; }
-    html.dark-diagram marker path, html.dark-diagram marker polygon { fill: var(--flow) !important; stroke: var(--flow) !important; }
-    html.dark-diagram .djs-element[data-element-id$="_label"] text,
-    html.dark-diagram .djs-element[data-element-id$="_label"] .djs-label { fill: var(--ext-label) !important; }
-    html.dark-diagram .djs-grid-line { stroke: #3C3F44 !important; }
-    html.dark-diagram .bjs-powered-by { filter: invert(1); opacity: .55; }
-    #theme-bar { position: absolute; left: 12px; bottom: 12px; z-index: 8; display: flex; gap: 2px; padding: 3px; border-radius: 8px; background: var(--panel); border: 1px solid var(--border); box-shadow: 0 2px 10px rgba(0,0,0,.18); }
-    #theme-bar button { border: 0; background: transparent; color: var(--muted); height: 22px; padding: 0 9px; border-radius: 5px; cursor: pointer; font: 11px/22px "JetBrains Sans","Segoe UI",sans-serif; }
-    #theme-bar button.active, #theme-bar button:hover { background: var(--hover); color: var(--fg); }
     .bpmn-lint-mark { display: block; width: 10px; height: 10px; border-radius: 99px; box-shadow: 0 0 0 2px var(--canvas); }
     .bpmn-lint-error { background: #c45c58; }
     .bpmn-lint-warning { background: #c4a574; }
@@ -42,15 +31,7 @@
 </head>
 <body>
   <div id="app">
-    <div id="canvas-wrap">
-      <div id="canvas"></div>
-      <div id="theme-bar" role="group" aria-label="Diagram theme">
-        <button type="button" data-theme="slate">Slate</button>
-        <button type="button" data-theme="paper">Paper</button>
-        <button type="button" data-theme="night">Night</button>
-        <button type="button" data-theme="ide">IDE</button>
-      </div>
-    </div>
+    <div id="canvas"></div>
     <button type="button" id="toggle-props" title="Hide properties" aria-expanded="true">‹</button>
     <aside id="properties"></aside>
   </div>
@@ -175,48 +156,15 @@
       try { modeler.get("canvas").zoom("fit-viewport", "auto"); } catch (e) {}
     }
     window.__fit = fit;
-    var lastIde = { dark: false, canvas: "#F2F3F5" };
-    var currentPreset = "slate";
-    var PRESETS = {
-      slate: { canvas: "#2B2D30", flow: "#D7DBE3", ext: "#E8EAED", diagramDark: true },
-      paper: { canvas: "#F4F5F7", flow: "#1E1F22", ext: "#1E1F22", diagramDark: false },
-      night: { canvas: "#1A1B1E", flow: "#F2F4F7", ext: "#F2F4F7", diagramDark: true },
-      ide: { canvas: null, flow: null, ext: null, diagramDark: "ide" }
-    };
-    function applyPreset(name) {
-      currentPreset = PRESETS[name] ? name : "slate";
-      var p = PRESETS[currentPreset];
-      var root = document.documentElement;
-      var diagramDark = p.diagramDark === "ide" ? !!lastIde.dark : !!p.diagramDark;
-      root.classList.toggle("dark-diagram", diagramDark);
-      root.style.setProperty("--canvas", p.canvas || (lastIde.dark ? "#2B2D30" : (lastIde.canvas || "#F2F3F5")));
-      root.style.setProperty("--flow", p.flow || (diagramDark ? "#D7DBE3" : "#1E1F22"));
-      root.style.setProperty("--ext-label", p.ext || (diagramDark ? "#E8EAED" : "#1E1F22"));
-      document.querySelectorAll("#theme-bar button").forEach(function (b) {
-        b.classList.toggle("active", b.getAttribute("data-theme") === currentPreset);
-      });
-      try { localStorage.setItem("forge-bpmn-theme", currentPreset); } catch (e) {}
-    }
     window.__applyTheme = function (t) {
-      lastIde = t || lastIde;
       var root = document.documentElement;
       root.classList.toggle("dark", !!t.dark);
       ["bg","panel","fg","muted","border","input","hover","accent"].forEach(function (k) {
         if (t[k]) root.style.setProperty("--" + k, t[k]);
       });
-      if (t.canvas) lastIde.canvas = t.canvas;
-      applyPreset(currentPreset);
+      root.style.setProperty("--canvas", "#F4F5F7");
+      root.style.setProperty("--flow", "#1E1F22");
     };
-    (function setupThemeBar() {
-      try {
-        var saved = localStorage.getItem("forge-bpmn-theme");
-        if (saved && PRESETS[saved]) currentPreset = saved;
-      } catch (e) {}
-      document.querySelectorAll("#theme-bar button").forEach(function (b) {
-        b.addEventListener("click", function () { applyPreset(b.getAttribute("data-theme")); });
-      });
-      applyPreset(currentPreset);
-    })();
     (function setupPropsToggle() {
       var app = document.getElementById("app");
       var btn = document.getElementById("toggle-props");
