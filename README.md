@@ -38,7 +38,7 @@ See **[MARKETPLACE.md](MARKETPLACE.md)**. Short path:
 1. Push this project to GitHub.
 2. Add secrets: `PUBLISH_TOKEN`, `CERTIFICATE_CHAIN`, `PRIVATE_KEY`, `PRIVATE_KEY_PASSWORD`.
 3. Upload the **first** version by hand at [plugins.jetbrains.com/plugin/add](https://plugins.jetbrains.com/plugin/add) (`build/distributions/*.zip`).
-4. Later versions: GitHub → Releases → publish tag `v0.3.0`. The **Publish** workflow runs `gradle publishPlugin`.
+4. Later versions: GitHub → Releases → publish tag `v0.3.1`. The **Publish** workflow runs `gradle publishPlugin`.
 
 ## Identity
 
@@ -46,5 +46,5 @@ See **[MARKETPLACE.md](MARKETPLACE.md)**. Short path:
 | --- | --- |
 | Id | `com.forge.bpmn` |
 | Vendor | Forge |
-| Version | 0.3.0 |
+| Version | 0.3.1 |
 | Folder | `forge-bpmn/` |

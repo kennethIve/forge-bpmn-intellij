@@ -1,39 +1,29 @@
 # Test Forge BPMN in IntelliJ
 
 Plugin id: `com.forge.bpmn`  
-Needs IntelliJ IDEA 2024.3+ and JDK 17.
+Needs IntelliJ IDEA 2024.3 or later (2025 / 2026 included).
 
-## A. Sandbox IDE (fastest)
+**Do not install the source ZIP** (the one with `build.gradle.kts`). That is a Gradle project, not a plugin.
 
-Does **not** install into your daily IntelliJ. It starts a second IDE with the plugin loaded.
+**Do not install a GitHub Actions artifact download as-is.** The website wraps the plugin in a second zip.
 
-1. Unzip the project. In IntelliJ: **File → Open** the folder that contains `build.gradle.kts` (not only `src`).
-2. Trust the Gradle project. Wait until indexing finishes.
-3. Run configuration **Run Plugin**, or Gradle task `runIde`.
-4. In the new IDE window, create or open a `.bpmn` file.
-5. Use the **BPMN** / **XML** buttons under the editor to switch views.
+## Install from GitHub Releases (your daily IntelliJ)
 
-## B. Install into your own IntelliJ
+1. Download `forge-bpmn-*.zip` from [Releases](https://github.com/kennethIve/forge-bpmn-intellij/releases) — the file that contains a `lib/` folder, not the source tree.
+2. IntelliJ → **Settings → Plugins** → gear → **Install Plugin from Disk…**
+3. Pick that zip. Restart the IDE.
+4. Open a `.bpmn` file. Bottom of the editor: **BPMN** and **XML**.
 
-This loads the plugin in the IDE you use every day.
+If IntelliJ says the plugin is incompatible, you grabbed an old build capped at 2025.3. Use 0.3.1 or later.
 
-1. Build a distribution zip:
-   - Locally: Gradle task `buildPlugin`
-   - Or GitHub → Actions → **Build** → download artifact `plugin-distribution`
-2. In IntelliJ: **Settings / Preferences → Plugins**.
-3. Click the gear → **Install Plugin from Disk…**
-4. Choose `build/distributions/*.zip` (the plugin zip, not this source zip).
-5. Restart the IDE.
-6. Open a `.bpmn` file. Bottom of the editor: **BPMN** and **XML**.
+## Sandbox IDE (does not touch your daily install)
 
-To uninstall: Settings → Plugins → Forge BPMN → Uninstall.
+1. Clone or unzip the **source** project. **File → Open** the folder with `build.gradle.kts`.
+2. Trust Gradle. Run **Run Plugin**.
+3. In the new IDE window, open a `.bpmn` file.
 
-## Missing diagram assets?
-
-If the canvas is empty after a Git clone, run:
+## Missing diagram assets after a git clone?
 
 ```
 bash scripts/fetch-modeler-assets.sh
 ```
-
-The downloadable source ZIP already includes those files.
