@@ -10,7 +10,8 @@
     :root { --bg:#f7f8fa; --canvas:#F4F5F7; --panel:#f7f8fa; --fg:#1e1f22; --muted:#6c707e; --border:#d3d5db; --input:#ffffff; --hover:#ebecf0; --accent:#3574f0; --flow:#1e1f22; --palette:#F7F8FA; --palette-fg:#1E1F22; --palette-border:#D3D5DB; --palette-hover:#EBECF0; }
     #app { position: absolute; inset: 0; display: flex; min-height: 0; min-width: 0; background: var(--bg); }
     #canvas { position: relative; flex: 1; min-width: 0; min-height: 0; background: var(--canvas); }
-    #canvas .bjs-container, #canvas .djs-container { position: absolute !important; inset: 0; width: auto !important; height: auto !important; background: var(--canvas) !important; }
+    #canvas .bjs-container, #canvas .djs-container { position: absolute !important; inset: 0; width: auto !important; height: auto !important; background: var(--canvas) !important; background-image: none !important; }
+    .djs-grid, .layer-djs-grid, svg.djs-grid, .djs-grid-container { display: none !important; }
     #toggle-props { width: 18px; flex-shrink: 0; border: 0; border-left: 1px solid var(--border); background: var(--panel); color: var(--muted); cursor: pointer; font: 14px/1 "JetBrains Mono", monospace; padding: 0; }
     #toggle-props:hover { background: var(--hover); color: var(--fg); }
     #properties { width: 280px; flex-shrink: 0; border-left: 1px solid var(--border); background: var(--panel); overflow: hidden; color: var(--fg); }
@@ -136,6 +137,10 @@
       container: "#canvas",
       propertiesPanel: { parent: "#properties" }
     });
+    try {
+      var grid = modeler.get("grid");
+      if (grid && grid.setVisible) grid.setVisible(false);
+    } catch (e) {}
     var applying = false;
 
     function paintLint(issues) {
