@@ -46,7 +46,6 @@ class BpmnToolWindowFactory : ToolWindowFactory, DumbAware {
         toolWindow.isShowStripeButton = true
         toolWindow.stripeTitle = "BPMN"
     }
-    }
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         val explorer = BpmnExplorer(project, toolWindow.disposable)
