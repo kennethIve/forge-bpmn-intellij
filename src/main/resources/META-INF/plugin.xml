@@ -1,0 +1,42 @@
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+  <id>com.forge.bpmn</id>
+  <name>Forge BPMN</name>
+  <version>0.3.0</version>
+  <vendor email="plugins@example.com" url="https://github.com/kennethIve/forge-bpmn-intellij">Forge</vendor>
+
+  <description><![CDATA[
+    <p>View and edit BPMN 2.0 diagrams in IntelliJ IDEA. Camunda Modeler-style canvas, properties panel, XML round-trip, and basic syntax lint.</p>
+    <p>Opens <code>.bpmn</code> in a Camunda Modeler-style editor (bpmn-js Cloud distribution, properties panel, XML round-trip) with basic BPMN syntax lint.</p>
+    <p>Buttons under the IntelliJ editor switch <b>XML</b> and the <b>BPMN</b> diagram in one click. Diagram edits write back to the XML document.</p>
+  ]]></description>
+
+  <change-notes><![CDATA[
+    <ul>
+      <li>Bottom XML / BPMN switch under the editor, with round-trip sync.</li>
+      <li>Camunda Modeler-style diagram editor, properties panel, and BPMN syntax lint.</li>
+    </ul>
+  ]]></change-notes>
+
+  <depends>com.intellij.modules.platform</depends>
+  <depends>com.intellij.modules.lang</depends>
+  <depends>com.intellij.modules.xml</depends>
+
+  <extensions defaultExtensionNs="com.intellij">
+    <fileType name="BPMN"
+              implementationClass="com.forge.bpmn.BpmnFileType"
+              fieldName="INSTANCE"
+              language="XML"
+              extensions="bpmn"/>
+    <fileEditorProvider implementation="com.forge.bpmn.BpmnFileEditorProvider"/>
+    <fileEditorProvider implementation="com.forge.bpmn.BpmnXmlEditorProvider"/>
+    <annotator language="XML" implementationClass="com.forge.bpmn.BpmnAnnotator"/>
+    <localInspection language="XML"
+                     shortName="BpmnSyntax"
+                     displayName="BPMN syntax"
+                     groupName="BPMN"
+                     enabledByDefault="true"
+                     level="ERROR"
+                     implementationClass="com.forge.bpmn.BpmnInspection"/>
+  </extensions>
+</idea-plugin>

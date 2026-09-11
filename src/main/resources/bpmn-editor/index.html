@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>BPMN</title>
+  <link rel="stylesheet" href="assets/camunda-cloud-modeler.css"/>
+  <style>
+    html, body { height: 100%; margin: 0; background: #f8f9fb; color: #1c2128; font: 13px/1.45 "IBM Plex Sans", "Segoe UI", sans-serif; }
+    #app { display: flex; flex-direction: column; height: 100%; }
+    #bar { display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 10px; border-bottom: 1px solid #d5dae3; background: #fff; flex-shrink: 0; }
+    #bar button { height: 28px; padding: 0 10px; border: 1px solid #d5dae3; background: #fff; color: #1c2128; border-radius: 6px; cursor: pointer; font: inherit; }
+    #bar button:hover { background: #f3f5f7; }
+    #file { margin-left: auto; color: #5c6570; font-size: 12px; }
+    #main { display: flex; flex: 1; min-height: 0; }
+    #canvas { flex: 1; min-width: 0; min-height: 0; }
+    #properties { width: 300px; border-left: 1px solid #d5dae3; background: #f8f8f8; overflow: hidden; }
+    #properties .bio-properties-panel-container, #properties .bio-properties-panel { height: 100%; }
+    #problems { height: 148px; border-top: 1px solid #d5dae3; background: #fff; display: flex; flex-direction: column; flex-shrink: 0; }
+    #problems h2 { margin: 0; padding: 8px 12px; font-size: 11px; letter-spacing: .14em; color: #5c6570; border-bottom: 1px solid #d5dae3; font-weight: 600; }
+    #issue-list { overflow: auto; flex: 1; }
+    .issue { display: block; width: 100%; text-align: left; border: 0; background: transparent; padding: 8px 12px; cursor: pointer; color: #1c2128; font: inherit; }
+    .issue:hover { background: #f3f5f7; }
+    .err { color: #b5453d; }
+    .warn { color: #9a7430; }
+    .bpmn-lint-mark { display: block; width: 10px; height: 10px; border-radius: 99px; box-shadow: 0 0 0 2px #fff; }
+    .bpmn-lint-error { background: #c45c58; }
+    .bpmn-lint-warning { background: #c4a574; }
+    .bjs-container, .djs-container { height: 100%; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="bar">
+      <button type="button" id="undo">Undo</button>
+      <button type="button" id="redo">Redo</button>
+      <button type="button" id="fit">Fit</button>
+      <span id="file">diagram.bpmn</span>
+    </div>
+    <div id="main">
+      <div id="canvas"></div>
+      <aside id="properties"></aside>
+    </div>
+    <div id="problems">
+      <h2>PROBLEMS</h2>
+      <div id="issue-list"></div>
+    </div>
+  </div>
+  <script src="camunda-cloud-modeler.production.min.js"></script>
+  <script>
+    const TASK = new Set(["task","userTask","serviceTask","sendTask","receiveTask","scriptTask","businessRuleTask","manualTask","callActivity"]);
+    const NODES = new Set(["task","userTask","serviceTask","sendTask","receiveTask","scriptTask","businessRuleTask","manualTask","callActivity","startEvent","endEvent","intermediateThrowEvent","intermediateCatchEvent","boundaryEvent","exclusiveGateway","parallelGateway","inclusiveGateway","eventBasedGateway","complexGateway","subProcess"]);
+    function locals(root, name) {
+      return [...root.getElementsByTagName("*")].filter(function (n) { return n.localName === name; });
+    }
+    function attr(el, name) { return el.getAttribute(name) || ""; }
+    function child(el, name) { return [...el.children].find(function (c) { return c.localName === name; }); }
+    function isBpmn(el) { return !el.namespaceURI || el.namespaceURI === "http://www.omg.org/spec/BPMN/20100524/MODEL"; }
+    function zeebe(el, name) {
+      var ext = child(el, "extensionElements");
+      if (!ext) return null;
+      return [...ext.children].find(function (c) { return c.localName === name; }) || null;
+    }
+    function escAttr(s) {
+      return String(s).replace(/[&<>"']/g, function (c) {
+        if (c === "&") return "&" + "amp;";
+        if (c === "<") return "&" + "lt;";
+        if (c === ">") return "&" + "gt;";
+        if (c === '"') return "&" + "quot;";
+        return "&" + "#39;";
+      });
+    }
+    function lintBpmnXml(xml) {
+      var issues = [];
+      var trimmed = (xml || "").trim();
+      if (!trimmed) return [{ id: "empty", level: "error", rule: "xml", message: "Diagram is empty." }];
+      var doc = new DOMParser().parseFromString(trimmed, "application/xml");
+      if (doc.querySelector("parsererror")) return [{ id: "xml-parse", level: "error", rule: "xml", message: "BPMN XML is not well-formed." }];
+      var definitions = locals(doc, "definitions")[0];
+      if (!definitions) return [{ id: "no-definitions", level: "error", rule: "schema", message: "Missing bpmn:definitions root." }];
+      var processes = locals(definitions, "process");
+      if (!processes.length) return [{ id: "no-process", level: "error", rule: "schema", message: "No bpmn:process in this diagram." }];
+      var ids = new Map();
+      for (var el of definitions.querySelectorAll("*")) {
+        var id = attr(el, "id");
+        if (!id) continue;
+        ids.set(id, (ids.get(id) || 0) + 1);
+      }
+      for (var entry of ids) {
+        if (entry[1] > 1) issues.push({ id: "dup-" + entry[0], elementId: entry[0], level: "error", rule: "duplicate-id", message: "Duplicate id " + entry[0] + "." });
+      }
+      processes.forEach(function (process) {
+        var pid = attr(process, "id") || "process";
+        if (!locals(process, "startEvent").length) issues.push({ id: "no-start-" + pid, elementId: pid, level: "error", rule: "start-event", message: "Process has no start event." });
+        if (!locals(process, "endEvent").length) issues.push({ id: "no-end-" + pid, elementId: pid, level: "error", rule: "end-event", message: "Process has no end event." });
+        for (var task of [...process.querySelectorAll("*")].filter(function (n) { return TASK.has(n.localName) && isBpmn(n); })) {
+          var tid = attr(task, "id");
+          if (!attr(task, "name").trim()) issues.push({ id: "unnamed-" + tid, elementId: tid, level: "warning", rule: "task-name", message: task.localName + " should have a name." });
+        }
+        var defaults = new Set([...process.querySelectorAll("*")].map(function (n) { return attr(n, "default"); }).filter(Boolean));
+        for (var gw of locals(process, "exclusiveGateway")) {
+          var gid = attr(gw, "id");
+          var outgoing = locals(gw, "outgoing").map(function (n) { return (n.textContent || "").trim(); });
+          if (outgoing.length < 2) issues.push({ id: "xor-out-" + gid, elementId: gid, level: "warning", rule: "gateway", message: "Exclusive gateway should have at least two outgoing flows." });
+          for (var flowId of outgoing) {
+            var flow = locals(process, "sequenceFlow").find(function (f) { return attr(f, "id") === flowId; });
+            if (!flow) continue;
+            var named = attr(flow, "name").trim();
+            var condEl = locals(flow, "conditionExpression")[0];
+            var condition = condEl && (condEl.textContent || "").trim();
+            if (!named && !condition && !defaults.has(flowId)) issues.push({ id: "xor-cond-" + flowId, elementId: flowId, level: "warning", rule: "flow-condition", message: "Outgoing flow from exclusive gateway needs a name, condition, or default." });
+          }
+        }
+        for (var sf of locals(process, "sequenceFlow")) {
+          var fid = attr(sf, "id");
+          if (!attr(sf, "sourceRef") || !attr(sf, "targetRef")) issues.push({ id: "flow-ends-" + fid, elementId: fid, level: "error", rule: "sequence-flow", message: "Sequence flow is missing source or target." });
+        }
+        for (var node of [...process.querySelectorAll("*")].filter(function (n) { return NODES.has(n.localName) && isBpmn(n); })) {
+          if (node.localName === "boundaryEvent") continue;
+          var nid = attr(node, "id");
+          var incoming = locals(node, "incoming").length;
+          var outgoingN = locals(node, "outgoing").length;
+          if (node.localName === "startEvent") { if (!outgoingN) issues.push({ id: "start-out-" + nid, elementId: nid, level: "error", rule: "disconnected", message: "Start event has no outgoing flow." }); continue; }
+          if (node.localName === "endEvent") { if (!incoming) issues.push({ id: "end-in-" + nid, elementId: nid, level: "error", rule: "disconnected", message: "End event has no incoming flow." }); continue; }
+          if (!incoming && !outgoingN) issues.push({ id: "orphan-" + nid, elementId: nid, level: "warning", rule: "disconnected", message: node.localName + " is not connected." });
+          else if (!incoming) issues.push({ id: "no-in-" + nid, elementId: nid, level: "warning", rule: "disconnected", message: node.localName + " has no incoming flow." });
+          else if (!outgoingN) issues.push({ id: "no-out-" + nid, elementId: nid, level: "warning", rule: "disconnected", message: node.localName + " has no outgoing flow." });
+          var job = zeebe(node, "taskDefinition") ? attr(zeebe(node, "taskDefinition"), "type") : "";
+          if ((node.localName === "serviceTask" || node.localName === "sendTask") && !job) {
+            issues.push({ id: "job-" + nid, elementId: nid, level: "error", rule: "camunda8-job-type", message: node.localName + " needs a Zeebe job type." });
+          }
+        }
+      });
+      return issues;
+    }
+
+    var modeler = new BpmnModeler({
+      container: "#canvas",
+      propertiesPanel: { parent: "#properties" }
+    });
+    var applying = false;
+
+    function paintLint(issues) {
+      var overlays = modeler.get("overlays");
+      overlays.remove({ type: "lint" });
+      issues.forEach(function (issue) {
+        if (!issue.elementId) return;
+        try {
+          overlays.add(issue.elementId, "lint", {
+            position: { top: -8, left: -8 },
+            html: '<span class="bpmn-lint-mark bpmn-lint-' + issue.level + '" title="' + escAttr(issue.message) + '"></span>'
+          });
+        } catch (e) {}
+      });
+      var list = document.getElementById("issue-list");
+      list.replaceChildren();
+      if (!issues.length) {
+        var p = document.createElement("p");
+        p.className = "issue";
+        p.textContent = "No problems.";
+        list.appendChild(p);
+      } else {
+        issues.forEach(function (issue) {
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "issue";
+          var span = document.createElement("span");
+          span.className = issue.level === "error" ? "err" : "warn";
+          span.textContent = issue.message;
+          btn.appendChild(span);
+          btn.addEventListener("click", function () {
+            var id = issue.elementId;
+            if (!id) return;
+            var el = modeler.get("elementRegistry").get(id);
+            if (el) {
+              modeler.get("selection").select(el);
+              if (modeler.get("canvas").scrollToElement) modeler.get("canvas").scrollToElement(el);
+            }
+          });
+          list.appendChild(btn);
+        });
+      }
+    }
+
+    async function persist() {
+      if (applying) return;
+      var result = await modeler.saveXML({ format: true });
+      paintLint(lintBpmnXml(result.xml));
+      if (window.__onXmlChange) window.__onXmlChange(result.xml);
+    }
+
+    modeler.on("commandStack.changed", persist);
+    document.getElementById("undo").addEventListener("click", function () { modeler.get("commandStack").undo(); });
+    document.getElementById("redo").addEventListener("click", function () { modeler.get("commandStack").redo(); });
+    document.getElementById("fit").addEventListener("click", function () { modeler.get("canvas").zoom("fit-viewport", "auto"); });
+
+    window.__loadXml = async function (xml) {
+      applying = true;
+      try {
+        await modeler.importXML(xml);
+        modeler.get("canvas").zoom("fit-viewport", "auto");
+        paintLint(lintBpmnXml(xml));
+      } catch (err) {
+        paintLint(lintBpmnXml(xml));
+      } finally {
+        applying = false;
+      }
+    };
+  </script>
+</body>
+</html>
