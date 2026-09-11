@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
-  <g fill="#6C707E">
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">
+  <g fill="#6C707E" transform="translate(2 2)">
     <circle cx="3" cy="8" r="2"/>
     <rect x="6" y="5.75" width="5.25" height="4.5" rx=".7"/>
     <circle cx="13.25" cy="8" r="1.85"/>
