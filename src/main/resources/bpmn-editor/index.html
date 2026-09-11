@@ -17,13 +17,6 @@
     #canvas .bjs-container, #canvas .djs-container { position: absolute !important; inset: 0; width: auto !important; height: auto !important; }
     #properties { width: 280px; flex-shrink: 0; border-left: 1px solid #d5dae3; background: #f8f8f8; overflow: hidden; }
     #properties .bio-properties-panel-container, #properties .bio-properties-panel { height: 100%; }
-    #problems { height: 148px; border-top: 1px solid #d5dae3; background: #fff; display: flex; flex-direction: column; flex-shrink: 0; }
-    #problems h2 { margin: 0; padding: 8px 12px; font-size: 11px; letter-spacing: .14em; color: #5c6570; border-bottom: 1px solid #d5dae3; font-weight: 600; }
-    #issue-list { overflow: auto; flex: 1; }
-    .issue { display: block; width: 100%; text-align: left; border: 0; background: transparent; padding: 8px 12px; cursor: pointer; color: #1c2128; font: inherit; }
-    .issue:hover { background: #f3f5f7; }
-    .err { color: #b5453d; }
-    .warn { color: #9a7430; }
     .bpmn-lint-mark { display: block; width: 10px; height: 10px; border-radius: 99px; box-shadow: 0 0 0 2px #fff; }
     .bpmn-lint-error { background: #c45c58; }
     .bpmn-lint-warning { background: #c4a574; }
@@ -40,10 +33,6 @@
     <div id="main">
       <div id="canvas"></div>
       <aside id="properties"></aside>
-    </div>
-    <div id="problems">
-      <h2>PROBLEMS</h2>
-      <div id="issue-list"></div>
     </div>
   </div>
   <script src="camunda-cloud-modeler.production.min.js"></script>
@@ -152,34 +141,6 @@
           });
         } catch (e) {}
       });
-      var list = document.getElementById("issue-list");
-      list.replaceChildren();
-      if (!issues.length) {
-        var p = document.createElement("p");
-        p.className = "issue";
-        p.textContent = "No problems.";
-        list.appendChild(p);
-      } else {
-        issues.forEach(function (issue) {
-          var btn = document.createElement("button");
-          btn.type = "button";
-          btn.className = "issue";
-          var span = document.createElement("span");
-          span.className = issue.level === "error" ? "err" : "warn";
-          span.textContent = issue.message;
-          btn.appendChild(span);
-          btn.addEventListener("click", function () {
-            var id = issue.elementId;
-            if (!id) return;
-            var el = modeler.get("elementRegistry").get(id);
-            if (el) {
-              modeler.get("selection").select(el);
-              if (modeler.get("canvas").scrollToElement) modeler.get("canvas").scrollToElement(el);
-            }
-          });
-          list.appendChild(btn);
-        });
-      }
     }
 
     async function persist() {
