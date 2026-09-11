@@ -45,6 +45,7 @@ class BpmnToolWindowFactory : ToolWindowFactory, DumbAware {
         toolWindow.isAvailable = true
         toolWindow.isShowStripeButton = true
         toolWindow.stripeTitle = "BPMN"
+        toolWindow.setIcon(BpmnIcons.FILE)
     }
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
