@@ -8,13 +8,13 @@
   <description><![CDATA[
     <p>View and edit BPMN 2.0 diagrams in IntelliJ IDEA. Camunda Modeler-style canvas, properties panel, XML round-trip, and basic syntax lint.</p>
     <p>Opens <code>.bpmn</code> in a Camunda Modeler-style editor (bpmn-js Cloud distribution, properties panel, XML round-trip) with basic BPMN syntax lint.</p>
-    <p>Buttons under the IntelliJ editor switch <b>XML</b> and the <b>BPMN</b> diagram in one click. Diagram edits write back to the XML document.</p>
+    <p>The editor tabs switch between <b>XML</b> and the <b>BPMN</b> diagram. Diagram edits write back to the XML document.</p>
   ]]></description>
 
   <change-notes><![CDATA[
     <ul>
       <li>Built with Java 25 against IntelliJ IDEA 2026.2.</li>
-      <li>Bottom XML / BPMN switch under the editor, with round-trip sync.</li>
+      <li>Native BPMN / XML editor tabs, with round-trip sync.</li>
       <li>Camunda Modeler-style diagram editor, properties panel, and BPMN syntax lint.</li>
     </ul>
   ]]></change-notes>

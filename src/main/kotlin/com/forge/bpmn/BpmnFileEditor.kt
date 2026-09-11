@@ -85,7 +85,6 @@ class BpmnFileEditor(
                 }
             })
         }
-        panel.add(BpmnEditorTabs.bar(project, file, "bpmn"), BorderLayout.SOUTH)
     }
 
     private fun jsString(value: String): String {

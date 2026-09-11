@@ -16,10 +16,10 @@ class BpmnXmlEditorProvider : FileEditorProvider, DumbAware {
 
     override fun createEditor(project: Project, file: VirtualFile): FileEditor {
         val text = TextEditorProvider.getInstance().createEditor(project, file) as TextEditor
-        return BpmnXmlEditor(project, file, text)
+        return BpmnXmlEditor(file, text)
     }
 
-    override fun getEditorTypeId(): String = BpmnEditorTabs.XML_ID
+    override fun getEditorTypeId(): String = "forge-bpmn-xml"
 
     override fun getPolicy(): FileEditorPolicy = FileEditorPolicy.HIDE_DEFAULT_EDITOR
 }

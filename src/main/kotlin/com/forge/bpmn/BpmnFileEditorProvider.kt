@@ -16,7 +16,7 @@ class BpmnFileEditorProvider : FileEditorProvider, DumbAware {
         return BpmnFileEditor(project, file)
     }
 
-    override fun getEditorTypeId(): String = BpmnEditorTabs.DIAGRAM_ID
+    override fun getEditorTypeId(): String = "forge-bpmn-diagram"
 
     override fun getPolicy(): FileEditorPolicy = FileEditorPolicy.PLACE_BEFORE_DEFAULT_EDITOR
 }
