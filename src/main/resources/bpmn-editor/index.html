@@ -7,11 +7,14 @@
   <link rel="stylesheet" href="assets/camunda-cloud-modeler.css"/>
   <style>
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: var(--bg, #f7f8fa); color: var(--fg, #1e1f22); font: 13px/1.45 "JetBrains Sans", "IBM Plex Sans", "Segoe UI", sans-serif; }
-    :root { --bg:#f7f8fa; --canvas:#ffffff; --panel:#f7f8fa; --fg:#1e1f22; --muted:#6c707e; --border:#d3d5db; --input:#ffffff; --hover:#ebecf0; --accent:#3574f0; }
+    :root { --bg:#f7f8fa; --canvas:#f2f3f5; --panel:#f7f8fa; --fg:#1e1f22; --muted:#6c707e; --border:#d3d5db; --input:#ffffff; --hover:#ebecf0; --accent:#3574f0; --flow:#1e1f22; --ext-label:#1e1f22; }
     #app { position: absolute; inset: 0; display: flex; min-height: 0; min-width: 0; background: var(--bg); }
     #canvas { position: relative; flex: 1; min-width: 0; min-height: 0; background: var(--canvas); }
     #canvas .bjs-container, #canvas .djs-container { position: absolute !important; inset: 0; width: auto !important; height: auto !important; background: var(--canvas) !important; }
+    #toggle-props { width: 18px; flex-shrink: 0; border: 0; border-left: 1px solid var(--border); background: var(--panel); color: var(--muted); cursor: pointer; font: 14px/1 "JetBrains Mono", monospace; padding: 0; }
+    #toggle-props:hover { background: var(--hover); color: var(--fg); }
     #properties { width: 280px; flex-shrink: 0; border-left: 1px solid var(--border); background: var(--panel); overflow: hidden; color: var(--fg); }
+    #app.props-collapsed #properties { display: none; }
     #properties .bio-properties-panel-container, #properties .bio-properties-panel { height: 100%; background: var(--panel) !important; color: var(--fg) !important; }
     .bio-properties-panel-header, .bio-properties-panel-group, .bio-properties-panel-group-header, .bio-properties-panel-scroll-container { background: var(--panel) !important; color: var(--fg) !important; border-color: var(--border) !important; }
     .bio-properties-panel-input, .bio-properties-panel select, .bio-properties-panel textarea, .bio-properties-panel input { background: var(--input) !important; color: var(--fg) !important; border-color: var(--border) !important; }
@@ -21,6 +24,14 @@
     .djs-palette .separator { border-color: var(--border) !important; }
     .djs-popup, .djs-context-pad .entry { background: var(--panel) !important; color: var(--fg) !important; border-color: var(--border) !important; }
     html.dark .djs-palette .entry svg, html.dark .djs-context-pad .entry svg { filter: invert(1); }
+    .djs-connection .djs-visual > path { stroke: var(--flow) !important; }
+    html.dark .djs-connection .djs-visual > path { stroke: #D7DBE3 !important; }
+    html.dark marker path, html.dark marker polygon { fill: #D7DBE3 !important; stroke: #D7DBE3 !important; }
+    html.dark .djs-element[data-element-id$="_label"] text,
+    html.dark .djs-element[data-element-id$="_label"] .djs-label { fill: #E8EAED !important; }
+    html.dark .djs-grid-line { stroke: #3C3F44 !important; }
+    html.dark .bjs-powered-by { filter: invert(1); opacity: .55; }
+    html.dark .djs-overlay-context-pad { filter: none; }
     .bpmn-lint-mark { display: block; width: 10px; height: 10px; border-radius: 99px; box-shadow: 0 0 0 2px var(--canvas); }
     .bpmn-lint-error { background: #c45c58; }
     .bpmn-lint-warning { background: #c4a574; }
@@ -29,6 +40,7 @@
 <body>
   <div id="app">
     <div id="canvas"></div>
+    <button type="button" id="toggle-props" title="Hide properties" aria-expanded="true">‹</button>
     <aside id="properties"></aside>
   </div>
   <script src="camunda-cloud-modeler.production.min.js"></script>
@@ -158,7 +170,27 @@
       ["bg","canvas","panel","fg","muted","border","input","hover","accent"].forEach(function (k) {
         if (t[k]) root.style.setProperty("--" + k, t[k]);
       });
+      if (t.dark) root.style.setProperty("--canvas", "#2B2D30");
+      else root.style.setProperty("--canvas", t.canvas || "#F2F3F5");
     };
+    (function setupPropsToggle() {
+      var app = document.getElementById("app");
+      var btn = document.getElementById("toggle-props");
+      function apply(collapsed) {
+        app.classList.toggle("props-collapsed", collapsed);
+        btn.textContent = collapsed ? "›" : "‹";
+        btn.title = collapsed ? "Show properties" : "Hide properties";
+        btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+        try { localStorage.setItem("forge-bpmn-props-collapsed", collapsed ? "1" : "0"); } catch (e) {}
+        window.setTimeout(fit, 40);
+      }
+      apply((function () {
+        try { return localStorage.getItem("forge-bpmn-props-collapsed") === "1"; } catch (e) { return false; }
+      })());
+      btn.addEventListener("click", function () {
+        apply(!app.classList.contains("props-collapsed"));
+      });
+    })();
     window.addEventListener("resize", function () { fit(); });
     if (window.ResizeObserver) {
       new ResizeObserver(function () { fit(); }).observe(document.getElementById("canvas"));
