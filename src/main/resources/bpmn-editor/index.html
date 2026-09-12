@@ -24,6 +24,13 @@
     .djs-palette .entry:hover { background: var(--palette-hover) !important; }
     .djs-palette .separator { border-color: var(--palette-border) !important; }
     .djs-popup, .djs-context-pad .entry { background: var(--palette) !important; color: var(--palette-fg) !important; border-color: var(--palette-border) !important; }
+    html.dark-diagram .djs-outline { fill: none !important; stroke: #7EB0FF !important; stroke-width: 2px !important; }
+    html.dark-diagram .djs-context-pad.open { display: block; width: auto !important; max-width: 132px; padding: 6px; background: #2B2D30; border: 1px solid #6A7380; border-radius: 8px; box-shadow: 0 10px 28px rgba(0,0,0,.5), 0 0 0 1px rgba(126,176,255,.35); }
+    html.dark-diagram .djs-context-pad .entry { width: 28px !important; height: 28px !important; font-size: 18px !important; line-height: 28px !important; margin: 2px !important; border-radius: 6px !important; background: #3C3F44 !important; color: #F2F4F7 !important; box-shadow: none !important; }
+    html.dark-diagram .djs-context-pad .entry:hover { background: #548AF7 !important; color: #fff !important; }
+    html.dark-diagram .djs-popup { box-shadow: 0 16px 40px rgba(0,0,0,.55), 0 0 0 1px rgba(126,176,255,.45) !important; border: 1px solid #7EB0FF !important; border-radius: 8px !important; }
+    html.dark-diagram .djs-popup .entry.selected, html.dark-diagram .djs-popup .entry:hover { background: #2E436E !important; }
+    html.dark-diagram .djs-popup .entry.selected { box-shadow: inset 3px 0 0 #7EB0FF; }
     .djs-connection .djs-visual > path { stroke: var(--flow) !important; }
     html.dark-diagram .djs-connection .djs-visual > path { stroke: var(--flow) !important; }
     html.dark-diagram marker path, html.dark-diagram marker polygon { fill: var(--flow) !important; stroke: var(--flow) !important; }
