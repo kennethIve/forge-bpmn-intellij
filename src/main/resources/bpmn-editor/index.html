@@ -34,6 +34,35 @@
     html.dark-diagram .djs-minimap, html.dark-diagram .djs-overlay button {
       background: #3C3F44 !important; color: #DFE1E5 !important; border: 1px solid #4A4E55 !important;
     }
+    html.dark-diagram .djs-parent {
+      --canvas-fill-color: #2F3237;
+      --popup-background-color: #2B2D30;
+      --popup-border-color: #43454A;
+      --popup-shadow-color: rgba(0,0,0,.45);
+      --popup-disabled-color: #6F737A;
+      --popup-description-color: #9DA0A8;
+      --popup-no-results-color: #9DA0A8;
+      --popup-entry-title-color: #9DA0A8;
+      --popup-entry-hover-color: #3C3F44;
+      --popup-search-border-color: #43454A;
+      --popup-search-focus-background-color: #1E1F22;
+      --popup-tab-color: #9DA0A8;
+      --popup-tab-hover-color: #DFE1E5;
+      --popup-tab-active-color: #DFE1E5;
+      --shape-drop-allowed-fill-color: #3A3F48;
+      --shape-connect-allowed-fill-color: #3A3F48;
+      --shape-drop-not-allowed-fill-color: #4A3535;
+      --context-pad-entry-background-color: #2B2D30;
+      --context-pad-entry-hover-background-color: #3C3F44;
+    }
+    html.dark-diagram .djs-popup, html.dark-diagram .djs-popup-parent, html.dark-diagram .djs-popup-body {
+      background: #2B2D30 !important; color: #DFE1E5 !important; border-color: #43454A !important;
+    }
+    html.dark-diagram .djs-popup .entry, html.dark-diagram .djs-popup-title, html.dark-diagram .djs-popup-label { color: #DFE1E5 !important; }
+    html.dark-diagram .djs-popup-search input { background: #1E1F22 !important; color: #DFE1E5 !important; border-color: #43454A !important; }
+    html.dark-diagram .djs-popup-entry-docs { background: #3C3F44 !important; color: #DFE1E5 !important; border-color: #43454A !important; }
+    html.dark-diagram .djs-container svg.new-parent { background: #3A3F48 !important; }
+    html.dark-diagram .djs-container svg.drop-not-ok { background: #4A3535 !important; }
     .bpmn-lint-mark { display: block; width: 10px; height: 10px; border-radius: 99px; box-shadow: 0 0 0 2px var(--canvas); }
     .bpmn-lint-error { background: #c45c58; }
     .bpmn-lint-warning { background: #c4a574; }
