@@ -28,7 +28,10 @@
     html.dark-diagram .djs-connection .djs-visual > path { stroke: var(--flow) !important; }
     html.dark-diagram marker path, html.dark-diagram marker polygon { fill: var(--flow) !important; stroke: var(--flow) !important; }
     html.dark-diagram .djs-element[data-element-id$="_label"] text,
-    html.dark-diagram .djs-element[data-element-id$="_label"] .djs-label { fill: #ECEEF1 !important; }
+    html.dark-diagram .djs-element[data-element-id$="_label"] .djs-label,
+    html.dark-diagram .djs-label, html.dark-diagram .djs-label text { fill: #F7F8FA !important; }
+    html.dark-diagram .djs-shape .djs-visual > :first-child { fill: #555B66 !important; stroke: #E8ECF2 !important; }
+    html.dark-diagram .djs-shape .djs-visual > path:not(:first-child) { fill: #E8ECF2 !important; stroke: #E8ECF2 !important; }
     html.dark-diagram .djs-palette .entry svg, html.dark-diagram .djs-context-pad .entry svg { filter: invert(1); }
     html.dark-diagram .bjs-powered-by { filter: invert(1); opacity: .5; }
     html.dark-diagram .djs-minimap, html.dark-diagram .djs-overlay button {
@@ -164,7 +167,8 @@
 
     var modeler = new BpmnModeler({
       container: "#canvas",
-      propertiesPanel: { parent: "#properties" }
+      propertiesPanel: { parent: "#properties" },
+      bpmnRenderer: {"defaultFillColor":"#555B66","defaultStrokeColor":"#E8ECF2","defaultLabelColor":"#F7F8FA"}
     });
     try {
       var grid = modeler.get("grid");
@@ -232,7 +236,9 @@
         btn.title = collapsed ? "Show properties" : "Hide properties";
         btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
         try { localStorage.setItem("forge-bpmn-props-collapsed", collapsed ? "1" : "0"); } catch (e) {}
-        window.setTimeout(fit, 40);
+        window.setTimeout(function () {
+          try { modeler.get("canvas").resized(); } catch (e) {}
+        }, 40);
       }
       apply((function () {
         try { return localStorage.getItem("forge-bpmn-props-collapsed") === "1"; } catch (e) { return false; }
@@ -241,9 +247,13 @@
         apply(!app.classList.contains("props-collapsed"));
       });
     })();
-    window.addEventListener("resize", function () { fit(); });
+    window.addEventListener("resize", function () {
+      try { modeler.get("canvas").resized(); } catch (e) {}
+    });
     if (window.ResizeObserver) {
-      new ResizeObserver(function () { fit(); }).observe(document.getElementById("canvas"));
+      new ResizeObserver(function () {
+        try { modeler.get("canvas").resized(); } catch (e) {}
+      }).observe(document.getElementById("canvas"));
     }
 
     window.__loadXml = async function (xml) {
