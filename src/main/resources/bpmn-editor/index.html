@@ -8,15 +8,9 @@
   <link rel="stylesheet" href="assets/bpmn-js-token-simulation.css"/>
   <style>
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: var(--bg, #f7f8fa); color: var(--fg, #1e1f22); font: 13px/1.45 "JetBrains Sans", "IBM Plex Sans", "Segoe UI", sans-serif; }
-    :root { --bg:#f7f8fa; --canvas:#ffffff; --shape-fill:#ffffff; --flow:#000000; --label:#000000; --panel:#f7f8fa; --fg:#1e1f22; --muted:#6c707e; --border:#d3d5db; --input:#ffffff; --hover:#ebecf0; --accent:#3574f0; --palette:#F7F8FA; --palette-fg:#1E1F22; --palette-border:#D3D5DB; --palette-hover:#EBECF0; }
-    html.dark { --bg:#2B2D30; --canvas:#161616; --shape-fill:#262626; --flow:#C6C6C6; --label:#F4F4F4; --panel:#2B2D30; --fg:#DFE1E5; --muted:#9DA0A8; --border:#393B40; --input:#1E1F22; --hover:#3C3F44; --accent:#548AF7; --palette:#2B2D30; --palette-fg:#DFE1E5; --palette-border:#43454A; --palette-hover:#3C3F44; }
-    #app { position: absolute; inset: 0; display: flex; flex-direction: column; min-height: 0; min-width: 0; background: var(--bg); }
-    #sim-bar { flex-shrink: 0; height: 34px; display: flex; align-items: center; gap: 10px; padding: 0 10px; border-bottom: 1px solid var(--border); background: var(--panel); color: var(--fg); z-index: 20; }
-    #sim-btn { appearance: none; border: 1px solid var(--accent); background: var(--accent); color: #fff; font: 600 12px/1 "JetBrains Sans", "IBM Plex Sans", sans-serif; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
-    #sim-btn:hover { filter: brightness(1.08); }
-    #sim-btn.active { background: transparent; color: var(--fg); border-color: var(--border); }
-    #sim-hint { font-size: 12px; color: var(--muted); }
-    #work { flex: 1; display: flex; min-height: 0; min-width: 0; }
+    :root { --bg:#f7f8fa; --canvas:#ffffff; --shape-fill:#ffffff; --icon:#525252; --flow:#525252; --label:#161616; --panel:#f7f8fa; --fg:#1e1f22; --muted:#6c707e; --border:#d3d5db; --input:#ffffff; --hover:#ebecf0; --accent:#3574f0; --palette:#FAFAFA; --palette-fg:#222222; --palette-border:#CCCCCC; --palette-hover:#EBEBEB; }
+    html.dark { --bg:#2B2D30; --canvas:#161616; --shape-fill:#262626; --icon:#C6C6C6; --flow:#C6C6C6; --label:#F4F4F4; --panel:#2B2D30; --fg:#DFE1E5; --muted:#9DA0A8; --border:#393B40; --input:#1E1F22; --hover:#3C3F44; --accent:#548AF7; --palette:#2B2D30; --palette-fg:#C6C6C6; --palette-border:#43454A; --palette-hover:#3C3F44; }
+    #app { position: absolute; inset: 0; display: flex; min-height: 0; min-width: 0; background: var(--bg); }
     #canvas { position: relative; flex: 1; min-width: 0; min-height: 0; background: var(--canvas); }
     #canvas .bjs-container, #canvas .djs-container { position: absolute !important; inset: 0; width: auto !important; height: auto !important; background: var(--canvas) !important; background-image: none !important; }
     .djs-grid, .layer-djs-grid, svg.djs-grid, .djs-grid-container { display: none !important; }
@@ -39,14 +33,16 @@
     html.dark .djs-popup { box-shadow: 0 16px 40px rgba(0,0,0,.55), 0 0 0 1px rgba(126,176,255,.45) !important; border: 1px solid #7EB0FF !important; border-radius: 8px !important; }
     html.dark .djs-popup .entry.selected, html.dark .djs-popup .entry:hover { background: #2E436E !important; }
     html.dark .djs-popup .entry.selected { box-shadow: inset 3px 0 0 #7EB0FF; }
-    .djs-connection .djs-visual > path { stroke: var(--flow) !important; }
-    marker path, marker polygon { fill: var(--flow) !important; stroke: var(--flow) !important; }
+    .djs-connection .djs-visual > path { stroke: var(--icon) !important; }
+    marker path, marker polygon { fill: var(--icon) !important; stroke: var(--icon) !important; }
     .djs-element[data-element-id$="_label"] text,
     .djs-element[data-element-id$="_label"] .djs-label,
     .djs-label, .djs-label text { fill: var(--label) !important; }
-    .djs-shape .djs-visual > :first-child { fill: var(--shape-fill) !important; stroke: var(--flow) !important; }
-    .djs-shape .djs-visual > path:not(:first-child) { fill: var(--flow) !important; stroke: var(--flow) !important; }
-    html.dark .djs-palette .entry svg, html.dark .djs-context-pad .entry svg { filter: invert(1); }
+    .djs-shape .djs-visual > :first-child { fill: var(--shape-fill) !important; stroke: var(--icon) !important; }
+    .djs-shape .djs-visual > :not(:first-child) { stroke: var(--icon) !important; }
+    .djs-shape .djs-visual > :not(:first-child):not([fill="none"]) { fill: var(--icon) !important; }
+    .bjs-container .djs-palette { top: 60px; }
+    .bts-toggle-mode { z-index: 20; }
     .bjs-powered-by { opacity: .5; }
     html.dark .djs-minimap, html.dark .djs-overlay button {
       background: #3C3F44 !important; color: #DFE1E5 !important; border: 1px solid #4A4E55 !important;
@@ -80,7 +76,6 @@
     html.dark .djs-popup-entry-docs { background: #3C3F44 !important; color: #DFE1E5 !important; border-color: #43454A !important; }
     html.dark .djs-container svg.new-parent { background: #3A3F48 !important; }
     html.dark .djs-container svg.drop-not-ok { background: #4A3535 !important; }
-    .bts-toggle-mode { display: none !important; }
     .djs-palette.hidden { display: none !important; }
     #app.simulating #properties, #app.simulating #toggle-props { display: none; }
     .bpmn-lint-error { background: #c45c58; }
@@ -89,15 +84,9 @@
 </head>
 <body>
   <div id="app">
-    <div id="sim-bar">
-      <button type="button" id="sim-btn" title="Run token simulation">Simulate</button>
-      <span id="sim-hint">Start simulation, then click the play icon on a start event</span>
-    </div>
-    <div id="work">
-      <div id="canvas"></div>
-      <button type="button" id="toggle-props" title="Hide properties" aria-expanded="true">‹</button>
-      <aside id="properties"></aside>
-    </div>
+    <div id="canvas"></div>
+    <button type="button" id="toggle-props" title="Hide properties" aria-expanded="true">‹</button>
+    <aside id="properties"></aside>
   </div>
   <script src="camunda-cloud-modeler.production.min.js"></script>
   <script>
@@ -192,7 +181,7 @@
     var modeler = new BpmnModeler({
       container: "#canvas",
       propertiesPanel: { parent: "#properties" },
-      bpmnRenderer: {"defaultFillColor":"#ffffff","defaultStrokeColor":"#000000","defaultLabelColor":"#000000"}
+      bpmnRenderer: {"defaultFillColor":"var(--shape-fill, #ffffff)","defaultStrokeColor":"var(--icon, #525252)","defaultLabelColor":"var(--label, #161616)"}
     });
     try {
       var grid = modeler.get("grid");
@@ -203,25 +192,6 @@
     modeler.on("tokenSimulation.toggleMode", function (e) {
       simulating = !!(e && e.active);
       document.getElementById("app").classList.toggle("simulating", simulating);
-      var btn = document.getElementById("sim-btn");
-      var hint = document.getElementById("sim-hint");
-      if (btn) {
-        btn.textContent = simulating ? "Stop" : "Simulate";
-        btn.classList.toggle("active", simulating);
-      }
-      if (hint) hint.textContent = simulating
-        ? "Click the play icon on a start event to run tokens"
-        : "Start simulation, then click the play icon on a start event";
-    });
-    window.__toggleSimulation = function (on) {
-      try {
-        var mode = modeler.get("toggleMode");
-        if (typeof on === "boolean") mode.toggleMode(on);
-        else mode.toggleMode();
-      } catch (err) {}
-    };
-    document.getElementById("sim-btn").addEventListener("click", function () {
-      window.__toggleSimulation();
     });
 
     function paintLint(issues) {
@@ -270,6 +240,7 @@
       if (dark) {
         root.style.setProperty("--canvas", "#161616");
         root.style.setProperty("--shape-fill", "#262626");
+        root.style.setProperty("--icon", "#C6C6C6");
         root.style.setProperty("--flow", "#C6C6C6");
         root.style.setProperty("--label", "#F4F4F4");
         root.style.setProperty("--palette", "#2B2D30");
@@ -279,8 +250,9 @@
       } else {
         root.style.setProperty("--canvas", "#ffffff");
         root.style.setProperty("--shape-fill", "#ffffff");
-        root.style.setProperty("--flow", "#000000");
-        root.style.setProperty("--label", "#000000");
+        root.style.setProperty("--icon", "#525252");
+        root.style.setProperty("--flow", "#525252");
+        root.style.setProperty("--label", "#161616");
         root.style.setProperty("--palette", "#F7F8FA");
         root.style.setProperty("--palette-fg", "#1E1F22");
         root.style.setProperty("--palette-border", "#D3D5DB");
