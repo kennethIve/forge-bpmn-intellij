@@ -1,11 +1,6 @@
 package com.forge.bpmn
 
-import com.intellij.icons.AllIcons
 import com.intellij.ide.ui.LafManagerListener
-import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.actionSystem.ActionPlaces
-import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.CommandProcessor
 import com.intellij.openapi.editor.colors.EditorColorsManager
@@ -14,7 +9,6 @@ import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorState
-import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.UserDataHolderBase
@@ -89,27 +83,6 @@ class BpmnFileEditor(
             }, b.cefBrowser)
             FileDocumentManager.getInstance().getDocument(file)?.addDocumentListener(documentListener)
             b.loadURL(BpmnAssets.root.resolve("index.html").toUri().toString())
-            val simulate = object : DumbAwareAction(
-                "Simulate",
-                "Run BPMN token simulation (click a start event after enabling)",
-                AllIcons.Actions.Execute,
-            ) {
-                override fun actionPerformed(e: AnActionEvent) {
-                    if (!loaded) return
-                    b.cefBrowser.executeJavaScript(
-                        "window.__toggleSimulation && window.__toggleSimulation();",
-                        b.cefBrowser.url,
-                        0,
-                    )
-                }
-            }
-            val toolbar = ActionManager.getInstance().createActionToolbar(
-                ActionPlaces.EDITOR_TOOLBAR,
-                DefaultActionGroup(simulate),
-                true,
-            )
-            toolbar.targetComponent = panel
-            panel.add(toolbar.component, BorderLayout.NORTH)
             panel.add(b.component, BorderLayout.CENTER)
             panel.addComponentListener(object : ComponentAdapter() {
                 override fun componentResized(e: ComponentEvent) {
