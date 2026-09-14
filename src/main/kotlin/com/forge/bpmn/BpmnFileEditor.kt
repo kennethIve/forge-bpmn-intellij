@@ -65,21 +65,11 @@ class BpmnFileEditor(
             browser = b
             b.component.background = JBColor.PanelBackground
             val query = JBCefJSQuery.create(b as JBCefBrowserBase)
-            query.addHandler { xml ->
-                applyingFromJs = true
-                try {
-                    CommandProcessor.getInstance().runUndoTransparentAction {
-                        ApplicationManager.getApplication().runWriteAction {
-                            val doc = FileDocumentManager.getInstance().getDocument(file)
-                            if (doc != null) {
-                                if (doc.text != xml) doc.setText(xml)
-                            } else {
-                                file.setBinaryContent(xml.toByteArray(Charsets.UTF_8))
-                            }
-                        }
-                    }
-                } finally {
-                    applyingFromJs = false
+            Disposer.register(b, query)
+            query.addHandler { payload ->
+                val xml = decodeXmlPayload(payload)
+                onEdt {
+                    writeXmlFromJs(xml)
                 }
                 null
             }
@@ -87,7 +77,9 @@ class BpmnFileEditor(
                 override fun onLoadEnd(br: CefBrowser?, frame: CefFrame?, status: Int) {
                     if (frame == null || !frame.isMain) return
                     loaded = true
-                    val inject = "window.__onXmlChange = function(xml) { " + query.inject("xml") + " };"
+                    val inject = "window.__onXmlChange = function(xml) { " +
+                        query.inject("JSON.stringify(xml)") +
+                        " };"
                     br?.executeJavaScript(inject, br.url, 0)
                     SwingUtilities.invokeLater {
                         applyTheme()
@@ -127,6 +119,51 @@ class BpmnFileEditor(
             themeConnection.subscribe(LafManagerListener.TOPIC, LafManagerListener {
                 SwingUtilities.invokeLater { applyTheme() }
             })
+        }
+    }
+
+    private fun onEdt(block: () -> Unit) {
+        val app = ApplicationManager.getApplication()
+        if (app.isDispatchThread) block() else app.invokeAndWait(block)
+    }
+
+    private fun decodeXmlPayload(payload: String): String {
+        val trimmed = payload.trim()
+        if (trimmed.length >= 2 && trimmed.startsWith("\"") && trimmed.endsWith("\"")) {
+            return trimmed.substring(1, trimmed.length - 1)
+                .replace("\\\\", "\\")
+                .replace("\\n", "\n")
+                .replace("\\r", "\r")
+                .replace("\\t", "\t")
+                .replace("\\\"", "\"")
+        }
+        return payload
+    }
+
+    private fun writeXmlFromJs(xml: String) {
+        if (!file.isValid) return
+        applyingFromJs = true
+        try {
+            val manager = FileDocumentManager.getInstance()
+            val doc = manager.getDocument(file)
+            val app = ApplicationManager.getApplication()
+            if (doc != null) {
+                if (doc.text != xml) {
+                    CommandProcessor.getInstance().runUndoTransparentAction {
+                        app.runWriteAction { doc.setText(xml) }
+                    }
+                }
+                if (manager.isFileModified(file)) {
+                    manager.saveDocument(doc)
+                }
+            } else {
+                val bytes = xml.toByteArray(Charsets.UTF_8)
+                if (!file.contentsToByteArray().contentEquals(bytes)) {
+                    app.runWriteAction { file.setBinaryContent(bytes) }
+                }
+            }
+        } finally {
+            applyingFromJs = false
         }
     }
 
@@ -226,7 +263,7 @@ class BpmnFileEditor(
     override fun getPreferredFocusedComponent(): JComponent = panel
     override fun getName(): String = "BPMN"
     override fun setState(state: FileEditorState) {}
-    override fun isModified(): Boolean = false
+    override fun isModified(): Boolean = FileDocumentManager.getInstance().isFileModified(file)
     override fun isValid(): Boolean = file.isValid
     override fun addPropertyChangeListener(listener: PropertyChangeListener) {}
     override fun removePropertyChangeListener(listener: PropertyChangeListener) {}

@@ -238,11 +238,19 @@
       });
     }
 
-    async function persist() {
+    var persistTimer = null;
+    async function flushPersist() {
       if (applying || simulating) return;
-      var result = await modeler.saveXML({ format: true });
-      paintLint(lintBpmnXml(result.xml));
-      if (window.__onXmlChange) window.__onXmlChange(result.xml);
+      try {
+        var result = await modeler.saveXML({ format: true });
+        paintLint(lintBpmnXml(result.xml));
+        if (window.__onXmlChange) window.__onXmlChange(result.xml);
+      } catch (err) {}
+    }
+    function persist() {
+      if (applying || simulating) return;
+      if (persistTimer) window.clearTimeout(persistTimer);
+      persistTimer = window.setTimeout(flushPersist, 180);
     }
 
     modeler.on("commandStack.changed", persist);
