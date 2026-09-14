@@ -40,8 +40,30 @@
     .djs-element[data-element-id$="_label"] .djs-label,
     .djs-label, .djs-label text { fill: var(--label) !important; }
     .djs-shape .djs-visual > :first-child { fill: var(--shape-fill) !important; stroke: var(--icon) !important; }
-    .bjs-container .djs-palette { top: 60px; }
-    .bts-toggle-mode { z-index: 20; }
+    .bjs-container .djs-palette { top: 64px !important; z-index: 8 !important; }
+    .bts-toggle-mode {
+      display: inline-flex !important;
+      align-items: center;
+      gap: 4px;
+      position: absolute !important;
+      top: 12px !important;
+      left: 12px !important;
+      z-index: 1000 !important;
+      background: var(--token-simulation-silver-darken-94, #efefef) !important;
+      color: var(--token-simulation-grey-darken-30, #212121) !important;
+      border-radius: 2px;
+      padding: 6px 8px !important;
+      font-size: 14px !important;
+      line-height: 1.2;
+      cursor: pointer;
+      user-select: none;
+      box-shadow: 0 1px 4px rgba(0,0,0,.25);
+    }
+    .bjs-container.simulation .bts-toggle-mode,
+    .bts-toggle-mode:hover {
+      background: var(--token-simulation-green-base-44, #10d070) !important;
+      color: #fff !important;
+    }
     .bjs-powered-by { opacity: .5; }
     html.dark .djs-minimap, html.dark .djs-overlay button {
       background: #3C3F44 !important; color: #DFE1E5 !important; border: 1px solid #4A4E55 !important;
@@ -186,6 +208,22 @@
       var grid = modeler.get("grid");
       if (grid && grid.setVisible) grid.setVisible(false);
     } catch (e) {}
+    try {
+      modeler.get("toggleMode");
+    } catch (err) {
+      console.error("token simulation module missing", err);
+    }
+    window.setTimeout(function () {
+      if (document.querySelector(".bts-toggle-mode")) return;
+      var fallback = document.createElement("button");
+      fallback.type = "button";
+      fallback.className = "bts-toggle-mode";
+      fallback.textContent = "Token Simulation";
+      fallback.addEventListener("click", function () {
+        try { modeler.get("toggleMode").toggleMode(); } catch (e) {}
+      });
+      document.getElementById("canvas").appendChild(fallback);
+    }, 0);
     var applying = false;
     var simulating = false;
     modeler.on("tokenSimulation.toggleMode", function (e) {
