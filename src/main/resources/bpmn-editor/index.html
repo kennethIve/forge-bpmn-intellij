@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="assets/camunda-cloud-modeler.css"/>
   <style>
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: var(--bg, #f7f8fa); color: var(--fg, #1e1f22); font: 13px/1.45 "JetBrains Sans", "IBM Plex Sans", "Segoe UI", sans-serif; }
-    :root { --bg:#f7f8fa; --canvas:#F4F5F7; --panel:#f7f8fa; --fg:#1e1f22; --muted:#6c707e; --border:#d3d5db; --input:#ffffff; --hover:#ebecf0; --accent:#3574f0; --flow:#1e1f22; --palette:#F7F8FA; --palette-fg:#1E1F22; --palette-border:#D3D5DB; --palette-hover:#EBECF0; }
+    :root { --bg:#f7f8fa; --canvas:#ffffff; --panel:#f7f8fa; --fg:#1e1f22; --muted:#6c707e; --border:#d3d5db; --input:#ffffff; --hover:#ebecf0; --accent:#3574f0; --flow:#000000; --palette:#F7F8FA; --palette-fg:#1E1F22; --palette-border:#D3D5DB; --palette-hover:#EBECF0; }
     #app { position: absolute; inset: 0; display: flex; min-height: 0; min-width: 0; background: var(--bg); }
     #canvas { position: relative; flex: 1; min-width: 0; min-height: 0; background: var(--canvas); }
     #canvas .bjs-container, #canvas .djs-container { position: absolute !important; inset: 0; width: auto !important; height: auto !important; background: var(--canvas) !important; background-image: none !important; }
@@ -24,28 +24,27 @@
     .djs-palette .entry:hover { background: var(--palette-hover) !important; }
     .djs-palette .separator { border-color: var(--palette-border) !important; }
     .djs-popup, .djs-context-pad .entry { background: var(--palette) !important; color: var(--palette-fg) !important; border-color: var(--palette-border) !important; }
-    html.dark-diagram .djs-outline { fill: none !important; stroke: #7EB0FF !important; stroke-width: 2px !important; }
-    html.dark-diagram .djs-context-pad.open { display: block; width: auto !important; max-width: 132px; padding: 6px; background: #2B2D30; border: 1px solid #6A7380; border-radius: 8px; box-shadow: 0 10px 28px rgba(0,0,0,.5), 0 0 0 1px rgba(126,176,255,.35); }
-    html.dark-diagram .djs-context-pad .entry { width: 28px !important; height: 28px !important; font-size: 18px !important; line-height: 28px !important; margin: 2px !important; border-radius: 6px !important; background: #3C3F44 !important; color: #F2F4F7 !important; box-shadow: none !important; }
-    html.dark-diagram .djs-context-pad .entry:hover { background: #548AF7 !important; color: #fff !important; }
-    html.dark-diagram .djs-popup { box-shadow: 0 16px 40px rgba(0,0,0,.55), 0 0 0 1px rgba(126,176,255,.45) !important; border: 1px solid #7EB0FF !important; border-radius: 8px !important; }
-    html.dark-diagram .djs-popup .entry.selected, html.dark-diagram .djs-popup .entry:hover { background: #2E436E !important; }
-    html.dark-diagram .djs-popup .entry.selected { box-shadow: inset 3px 0 0 #7EB0FF; }
-    .djs-connection .djs-visual > path { stroke: var(--flow) !important; }
-    html.dark-diagram .djs-connection .djs-visual > path { stroke: var(--flow) !important; }
-    html.dark-diagram marker path, html.dark-diagram marker polygon { fill: var(--flow) !important; stroke: var(--flow) !important; }
-    html.dark-diagram .djs-element[data-element-id$="_label"] text,
-    html.dark-diagram .djs-element[data-element-id$="_label"] .djs-label,
-    html.dark-diagram .djs-label, html.dark-diagram .djs-label text { fill: #F7F8FA !important; }
-    html.dark-diagram .djs-shape .djs-visual > :first-child { fill: #555B66 !important; stroke: #E8ECF2 !important; }
-    html.dark-diagram .djs-shape .djs-visual > path:not(:first-child) { fill: #E8ECF2 !important; stroke: #E8ECF2 !important; }
-    html.dark-diagram .djs-palette .entry svg, html.dark-diagram .djs-context-pad .entry svg { filter: invert(1); }
-    html.dark-diagram .bjs-powered-by { filter: invert(1); opacity: .5; }
-    html.dark-diagram .djs-minimap, html.dark-diagram .djs-overlay button {
+    html.dark .djs-outline { fill: none !important; stroke: #7EB0FF !important; stroke-width: 2px !important; }
+    html.dark .djs-context-pad.open { display: block; width: auto !important; max-width: 132px; padding: 6px; background: #2B2D30; border: 1px solid #6A7380; border-radius: 8px; box-shadow: 0 10px 28px rgba(0,0,0,.5), 0 0 0 1px rgba(126,176,255,.35); }
+    html.dark .djs-context-pad .entry { width: 28px !important; height: 28px !important; font-size: 18px !important; line-height: 28px !important; margin: 2px !important; border-radius: 6px !important; background: #3C3F44 !important; color: #F2F4F7 !important; box-shadow: none !important; }
+    html.dark .djs-context-pad .entry:hover { background: #548AF7 !important; color: #fff !important; }
+    html.dark .djs-popup { box-shadow: 0 16px 40px rgba(0,0,0,.55), 0 0 0 1px rgba(126,176,255,.45) !important; border: 1px solid #7EB0FF !important; border-radius: 8px !important; }
+    html.dark .djs-popup .entry.selected, html.dark .djs-popup .entry:hover { background: #2E436E !important; }
+    html.dark .djs-popup .entry.selected { box-shadow: inset 3px 0 0 #7EB0FF; }
+    .djs-connection .djs-visual > path { stroke: #000 !important; }
+    marker path, marker polygon { fill: #000 !important; stroke: #000 !important; }
+    .djs-element[data-element-id$="_label"] text,
+    .djs-element[data-element-id$="_label"] .djs-label,
+    .djs-label, .djs-label text { fill: #000 !important; }
+    .djs-shape .djs-visual > :first-child { fill: #fff !important; stroke: #000 !important; }
+    .djs-shape .djs-visual > path:not(:first-child) { fill: #000 !important; stroke: #000 !important; }
+    html.dark .djs-palette .entry svg, html.dark .djs-context-pad .entry svg { filter: invert(1); }
+    .bjs-powered-by { opacity: .5; }
+    html.dark .djs-minimap, html.dark .djs-overlay button {
       background: #3C3F44 !important; color: #DFE1E5 !important; border: 1px solid #4A4E55 !important;
     }
-    html.dark-diagram .djs-parent {
-      --canvas-fill-color: #2F3237;
+    html.dark .djs-parent {
+      --canvas-fill-color: #ffffff;
       --popup-background-color: #2B2D30;
       --popup-border-color: #43454A;
       --popup-shadow-color: rgba(0,0,0,.45);
@@ -65,14 +64,14 @@
       --context-pad-entry-background-color: #2B2D30;
       --context-pad-entry-hover-background-color: #3C3F44;
     }
-    html.dark-diagram .djs-popup, html.dark-diagram .djs-popup-parent, html.dark-diagram .djs-popup-body {
+    html.dark .djs-popup, html.dark .djs-popup-parent, html.dark .djs-popup-body {
       background: #2B2D30 !important; color: #DFE1E5 !important; border-color: #43454A !important;
     }
-    html.dark-diagram .djs-popup .entry, html.dark-diagram .djs-popup-title, html.dark-diagram .djs-popup-label { color: #DFE1E5 !important; }
-    html.dark-diagram .djs-popup-search input { background: #1E1F22 !important; color: #DFE1E5 !important; border-color: #43454A !important; }
-    html.dark-diagram .djs-popup-entry-docs { background: #3C3F44 !important; color: #DFE1E5 !important; border-color: #43454A !important; }
-    html.dark-diagram .djs-container svg.new-parent { background: #3A3F48 !important; }
-    html.dark-diagram .djs-container svg.drop-not-ok { background: #4A3535 !important; }
+    html.dark .djs-popup .entry, html.dark .djs-popup-title, html.dark .djs-popup-label { color: #DFE1E5 !important; }
+    html.dark .djs-popup-search input { background: #1E1F22 !important; color: #DFE1E5 !important; border-color: #43454A !important; }
+    html.dark .djs-popup-entry-docs { background: #3C3F44 !important; color: #DFE1E5 !important; border-color: #43454A !important; }
+    html.dark .djs-container svg.new-parent { background: #3A3F48 !important; }
+    html.dark .djs-container svg.drop-not-ok { background: #4A3535 !important; }
     .bpmn-lint-mark { display: block; width: 10px; height: 10px; border-radius: 99px; box-shadow: 0 0 0 2px var(--canvas); }
     .bpmn-lint-error { background: #c45c58; }
     .bpmn-lint-warning { background: #c4a574; }
@@ -156,13 +155,15 @@
         for (var node of [...process.querySelectorAll("*")].filter(function (n) { return NODES.has(n.localName) && isBpmn(n); })) {
           if (node.localName === "boundaryEvent") continue;
           var nid = attr(node, "id");
-          var incoming = locals(node, "incoming").length;
-          var outgoingN = locals(node, "outgoing").length;
+          var incoming = 0, outgoingN = 0;
+          for (var sf2 of locals(process, "sequenceFlow")) {
+            if (attr(sf2, "sourceRef") === nid) outgoingN++;
+            if (attr(sf2, "targetRef") === nid) incoming++;
+          }
           if (node.localName === "startEvent") { if (!outgoingN) issues.push({ id: "start-out-" + nid, elementId: nid, level: "error", rule: "disconnected", message: "Start event has no outgoing flow." }); continue; }
           if (node.localName === "endEvent") { if (!incoming) issues.push({ id: "end-in-" + nid, elementId: nid, level: "error", rule: "disconnected", message: "End event has no incoming flow." }); continue; }
           if (!incoming && !outgoingN) issues.push({ id: "orphan-" + nid, elementId: nid, level: "warning", rule: "disconnected", message: node.localName + " is not connected." });
           else if (!incoming) issues.push({ id: "no-in-" + nid, elementId: nid, level: "warning", rule: "disconnected", message: node.localName + " has no incoming flow." });
-          else if (!outgoingN) issues.push({ id: "no-out-" + nid, elementId: nid, level: "warning", rule: "disconnected", message: node.localName + " has no outgoing flow." });
           var job = zeebe(node, "taskDefinition") ? attr(zeebe(node, "taskDefinition"), "type") : "";
           if ((node.localName === "serviceTask" || node.localName === "sendTask") && !job) {
             issues.push({ id: "job-" + nid, elementId: nid, level: "error", rule: "camunda8-job-type", message: node.localName + " needs a Zeebe job type." });
@@ -175,7 +176,7 @@
     var modeler = new BpmnModeler({
       container: "#canvas",
       propertiesPanel: { parent: "#properties" },
-      bpmnRenderer: {"defaultFillColor":"#555B66","defaultStrokeColor":"#E8ECF2","defaultLabelColor":"#F7F8FA"}
+      bpmnRenderer: {"defaultFillColor":"#ffffff","defaultStrokeColor":"#000000","defaultLabelColor":"#000000"}
     });
     try {
       var grid = modeler.get("grid");
@@ -214,20 +215,18 @@
       var root = document.documentElement;
       var dark = !!t.dark;
       root.classList.toggle("dark", dark);
-      root.classList.toggle("dark-diagram", dark);
+      root.classList.remove("dark-diagram");
       ["bg","panel","fg","muted","border","input","hover","accent"].forEach(function (k) {
         if (t[k]) root.style.setProperty("--" + k, t[k]);
       });
+      root.style.setProperty("--canvas", "#ffffff");
+      root.style.setProperty("--flow", "#000000");
       if (dark) {
-        root.style.setProperty("--canvas", "#2F3237");
-        root.style.setProperty("--flow", "#D5DAE3");
         root.style.setProperty("--palette", "#2B2D30");
         root.style.setProperty("--palette-fg", "#DFE1E5");
         root.style.setProperty("--palette-border", "#43454A");
         root.style.setProperty("--palette-hover", "#3C3F44");
       } else {
-        root.style.setProperty("--canvas", "#F4F5F7");
-        root.style.setProperty("--flow", "#1E1F22");
         root.style.setProperty("--palette", "#F7F8FA");
         root.style.setProperty("--palette-fg", "#1E1F22");
         root.style.setProperty("--palette-border", "#D3D5DB");
@@ -263,12 +262,22 @@
       }).observe(document.getElementById("canvas"));
     }
 
+    window.__resized = function () {
+      try { modeler.get("canvas").resized(); } catch (e) {}
+    };
     window.__loadXml = async function (xml) {
       applying = true;
+      var canvas = modeler.get("canvas");
+      var previous = null;
+      try {
+        var vb = canvas.viewbox();
+        if (vb && vb.width && vb.height) previous = { x: vb.x, y: vb.y, width: vb.width, height: vb.height };
+      } catch (e) {}
       try {
         await modeler.importXML(xml);
-        fit();
-        window.setTimeout(fit, 80);
+        canvas.resized();
+        if (previous) canvas.viewbox(previous);
+        else fit();
         paintLint(lintBpmnXml(xml));
       } catch (err) {
         paintLint(lintBpmnXml(xml));

@@ -73,15 +73,22 @@ object BpmnLint {
                 val d = attr(descendants.item(i) as Element, "default")
                 if (d.isNotEmpty()) defaults += d
             }
+            val inMap = mutableMapOf<String, Int>()
+            val outMap = mutableMapOf<String, Int>()
+            for (flow in locals(process, "sequenceFlow")) {
+                val src = attr(flow, "sourceRef")
+                val tgt = attr(flow, "targetRef")
+                if (src.isNotEmpty()) outMap[src] = (outMap[src] ?: 0) + 1
+                if (tgt.isNotEmpty()) inMap[tgt] = (inMap[tgt] ?: 0) + 1
+            }
             for (gw in locals(process, "exclusiveGateway")) {
                 val gid = attr(gw, "id")
-                val outgoing = locals(gw, "outgoing").map { it.textContent?.trim().orEmpty() }
-                if (outgoing.size < 2) {
+                val outgoingFlows = locals(process, "sequenceFlow").filter { attr(it, "sourceRef") == gid }
+                if (outgoingFlows.size < 2) {
                     issues += Issue("xor-out-$gid", gid, "warning", "gateway", "Exclusive gateway should have at least two outgoing flows.")
                 }
-                val flows = locals(process, "sequenceFlow")
-                for (flowId in outgoing) {
-                    val flow = flows.find { attr(it, "id") == flowId } ?: continue
+                for (flow in outgoingFlows) {
+                    val flowId = attr(flow, "id")
                     val named = attr(flow, "name").isNotBlank()
                     val condition = locals(flow, "conditionExpression").firstOrNull()?.textContent?.trim().orEmpty()
                     if (!named && condition.isEmpty() && flowId !in defaults) {
@@ -103,8 +110,8 @@ object BpmnLint {
                 val node = descendants.item(i) as Element
                 if (node.localName !in nodes || node.localName == "boundaryEvent" || !isBpmn(node)) continue
                 val nid = attr(node, "id")
-                val incoming = locals(node, "incoming").size
-                val outgoing = locals(node, "outgoing").size
+                val incoming = inMap[nid] ?: 0
+                val outgoing = outMap[nid] ?: 0
                 when (node.localName) {
                     "startEvent" -> if (outgoing == 0) issues += Issue("start-out-$nid", nid, "error", "disconnected", "Start event has no outgoing flow.")
                     "endEvent" -> if (incoming == 0) issues += Issue("end-in-$nid", nid, "error", "disconnected", "End event has no incoming flow.")
@@ -113,8 +120,6 @@ object BpmnLint {
                             issues += Issue("orphan-$nid", nid, "warning", "disconnected", "${node.localName} is not connected.")
                         } else if (incoming == 0) {
                             issues += Issue("no-in-$nid", nid, "warning", "disconnected", "${node.localName} has no incoming flow.")
-                        } else if (outgoing == 0) {
-                            issues += Issue("no-out-$nid", nid, "warning", "disconnected", "${node.localName} has no outgoing flow.")
                         }
                     }
                 }
