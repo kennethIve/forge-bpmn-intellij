@@ -3,7 +3,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DEST="$ROOT/src/main/resources/bpmn-editor"
 mkdir -p "$DEST"
-if [[ -f "$DEST/camunda-cloud-modeler.production.min.js" && -d "$DEST/assets" ]]; then
+if [[ -f "$DEST/camunda-cloud-modeler.production.min.js" && -d "$DEST/assets" && -f "$DEST/assets/bpmn-js-token-simulation.css" ]]; then
   echo "modeler assets already present"
   exit 0
 fi
@@ -15,3 +15,4 @@ tar -xzf camunda-bpmn-js-*.tgz
 cp package/dist/camunda-cloud-modeler.production.min.js "$DEST/"
 cp -R package/dist/assets "$DEST/"
 echo "fetched camunda-bpmn-js assets into $DEST"
+echo "run workspace scripts/bundle-plugin-modeler.mjs to add token simulation"
