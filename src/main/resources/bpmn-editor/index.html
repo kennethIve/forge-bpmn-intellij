@@ -8,8 +8,8 @@
   <link rel="stylesheet" href="assets/bpmn-js-token-simulation.css"/>
   <style>
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: var(--bg, #f7f8fa); color: var(--fg, #1e1f22); font: 13px/1.45 "JetBrains Sans", "IBM Plex Sans", "Segoe UI", sans-serif; }
-    :root { --bg:#f7f8fa; --canvas:#ffffff; --shape-fill:#ffffff; --icon:#525252; --flow:#525252; --label:#161616; --panel:#f7f8fa; --fg:#1e1f22; --muted:#6c707e; --border:#d3d5db; --input:#ffffff; --hover:#ebecf0; --accent:#3574f0; --palette:#FAFAFA; --palette-fg:#222222; --palette-border:#CCCCCC; --palette-hover:#EBEBEB; }
-    html.dark { --bg:#2B2D30; --canvas:#161616; --shape-fill:#262626; --icon:#C6C6C6; --flow:#C6C6C6; --label:#F4F4F4; --panel:#2B2D30; --fg:#DFE1E5; --muted:#9DA0A8; --border:#393B40; --input:#1E1F22; --hover:#3C3F44; --accent:#548AF7; --palette:#2B2D30; --palette-fg:#C6C6C6; --palette-border:#43454A; --palette-hover:#3C3F44; }
+    :root { --bg:#f7f8fa; --canvas:#ffffff; --shape-fill:#ffffff; --icon:#525252; --flow:#525252; --label:#161616; --panel:#f7f8fa; --fg:#1e1f22; --muted:#6c707e; --border:#d3d5db; --input:#ffffff; --hover:#ebecf0; --accent:#3574f0; --palette:#FAFAFA; --palette-fg:#222222; --palette-border:#CCCCCC; --palette-hover:#EBEBEB; --token-simulation-green-base-44:#10d070; --token-simulation-grey-darken-30:var(--fg); --token-simulation-grey-lighten-56:var(--hover); --token-simulation-grey-base-40:var(--muted); --token-simulation-silver-darken-94:var(--palette); --token-simulation-silver-base-97:var(--panel); --token-simulation-white:#ffffff; }
+    html.dark { --bg:#2B2D30; --canvas:#161616; --shape-fill:#262626; --icon:#C6C6C6; --flow:#C6C6C6; --label:#F4F4F4; --panel:#2B2D30; --fg:#DFE1E5; --muted:#9DA0A8; --border:#393B40; --input:#1E1F22; --hover:#3C3F44; --accent:#548AF7; --palette:#2B2D30; --palette-fg:#C6C6C6; --palette-border:#43454A; --palette-hover:#3C3F44; --token-simulation-grey-darken-30:#DFE1E5; --token-simulation-grey-lighten-56:#3C3F44; --token-simulation-grey-base-40:#9DA0A8; --token-simulation-silver-darken-94:#3C3F44; --token-simulation-silver-base-97:#2B2D30; }
     #app { position: absolute; inset: 0; display: flex; min-height: 0; min-width: 0; background: var(--bg); }
     #canvas { position: relative; flex: 1; min-width: 0; min-height: 0; background: var(--canvas); }
     #canvas .bjs-container, #canvas .djs-container { position: absolute !important; inset: 0; width: auto !important; height: auto !important; background: var(--canvas) !important; background-image: none !important; }
@@ -48,8 +48,9 @@
       top: 20px !important;
       left: 20px !important;
       z-index: 1000 !important;
-      background: #efefef !important;
-      color: #212121 !important;
+      background: var(--palette) !important;
+      color: var(--palette-fg) !important;
+      border: 1px solid var(--palette-border);
       border-radius: 2px;
       padding: 6px !important;
       font-size: 16px !important;
@@ -59,7 +60,7 @@
     }
     .bts-toggle-mode .bts-toggle { margin-left: .25em; display: inline-flex; }
     .bjs-container.simulation .bts-toggle-mode,
-    .bts-toggle-mode:hover { background: #10d070 !important; color: #fff !important; }
+    .bts-toggle-mode:hover { background: var(--token-simulation-green-base-44, #10d070) !important; color: #fff !important; border-color: transparent; }
     .bts-context-pad,
     .bts-palette .bts-entry {
       display: flex !important;
@@ -68,20 +69,27 @@
       width: 30px !important;
       height: 30px !important;
       box-sizing: border-box;
-      background: #909090 !important;
-      color: #212121 !important;
-      border: none !important;
+      background: var(--hover) !important;
+      color: var(--fg) !important;
+      border: 1px solid var(--border) !important;
       border-radius: 2px;
       opacity: 1 !important;
       font-size: 16px !important;
     }
-    .bts-palette .bts-entry { background: #efefef !important; margin-bottom: 6px; }
+    .bts-palette .bts-entry { background: var(--palette) !important; margin-bottom: 6px; }
     .bts-context-pad:hover,
     .bts-palette .bts-entry:hover,
     .bts-palette .bts-entry.active {
-      background: #10d070 !important;
+      background: var(--token-simulation-green-base-44, #10d070) !important;
       color: #fff !important;
+      border-color: transparent !important;
     }
+    .bts-log {
+      background: var(--panel) !important;
+      color: var(--fg) !important;
+      border: 1px solid var(--border);
+    }
+    .bts-token-count { background: var(--palette) !important; color: var(--fg) !important; }
     .bts-icon, .bts-toggle-mode .bts-icon, .bts-context-pad .bts-icon, .bts-palette .bts-icon {
       display: inline-flex !important;
       align-items: center;
