@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>BPMN</title>
   <link rel="stylesheet" href="assets/camunda-cloud-modeler.css"/>
+  <link rel="stylesheet" href="assets/bpmn-js-token-simulation.css"/>
   <style>
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: var(--bg, #f7f8fa); color: var(--fg, #1e1f22); font: 13px/1.45 "JetBrains Sans", "IBM Plex Sans", "Segoe UI", sans-serif; }
     :root { --bg:#f7f8fa; --canvas:#ffffff; --panel:#f7f8fa; --fg:#1e1f22; --muted:#6c707e; --border:#d3d5db; --input:#ffffff; --hover:#ebecf0; --accent:#3574f0; --flow:#000000; --palette:#F7F8FA; --palette-fg:#1E1F22; --palette-border:#D3D5DB; --palette-hover:#EBECF0; }
@@ -72,7 +73,9 @@
     html.dark .djs-popup-entry-docs { background: #3C3F44 !important; color: #DFE1E5 !important; border-color: #43454A !important; }
     html.dark .djs-container svg.new-parent { background: #3A3F48 !important; }
     html.dark .djs-container svg.drop-not-ok { background: #4A3535 !important; }
-    .bpmn-lint-mark { display: block; width: 10px; height: 10px; border-radius: 99px; box-shadow: 0 0 0 2px var(--canvas); }
+    .bts-toggle-mode { left: 72px; top: 16px; z-index: 12; background: #3C3F44 !important; color: #DFE1E5 !important; border: 1px solid #4A4E55; font-size: 12px !important; padding: 5px 8px !important; }
+    .djs-palette.hidden { display: none !important; }
+    #app.simulating #properties, #app.simulating #toggle-props { display: none; }
     .bpmn-lint-error { background: #c45c58; }
     .bpmn-lint-warning { background: #c4a574; }
   </style>
@@ -183,6 +186,11 @@
       if (grid && grid.setVisible) grid.setVisible(false);
     } catch (e) {}
     var applying = false;
+    var simulating = false;
+    modeler.on("tokenSimulation.toggleMode", function (e) {
+      simulating = !!(e && e.active);
+      document.getElementById("app").classList.toggle("simulating", simulating);
+    });
 
     function paintLint(issues) {
       var overlays = modeler.get("overlays");
@@ -199,7 +207,7 @@
     }
 
     async function persist() {
-      if (applying) return;
+      if (applying || simulating) return;
       var result = await modeler.saveXML({ format: true });
       paintLint(lintBpmnXml(result.xml));
       if (window.__onXmlChange) window.__onXmlChange(result.xml);
