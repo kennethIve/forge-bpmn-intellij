@@ -14,6 +14,7 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.UserDataHolderBase
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.JBColor
+import com.intellij.ui.components.Magnificator
 import com.intellij.ui.jcef.JBCefApp
 import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.ui.jcef.JBCefBrowserBase
@@ -23,14 +24,21 @@ import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
 import java.awt.BorderLayout
 import java.awt.Color
+import java.awt.Component
+import java.awt.MouseInfo
+import java.awt.Point
 import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
 import java.beans.PropertyChangeListener
+import java.lang.reflect.Proxy
 import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.SwingConstants
 import javax.swing.SwingUtilities
+import javax.swing.Timer
+import kotlin.math.abs
+import kotlin.math.pow
 
 class BpmnFileEditor(
     private val project: Project,
@@ -42,6 +50,8 @@ class BpmnFileEditor(
     private var loaded = false
     private var diagramActive = true
     private val themeConnection = project.messageBus.connect()
+    private var zoomTimer: Timer? = null
+    private var cefZoomResetting = false
     private val documentListener = object : DocumentListener {
         override fun documentChanged(event: DocumentEvent) {
             if (!applyingFromJs && loaded && diagramActive) {
@@ -75,31 +85,17 @@ class BpmnFileEditor(
                         query.inject("JSON.stringify(xml)") +
                         " };"
                     br?.executeJavaScript(inject, br.url, 0)
-                    try {
-                        br?.javaClass?.getMethod("setZoomLevel", java.lang.Double.TYPE)?.invoke(br, 0.0)
-                    } catch (_: Throwable) {
-                    }
+                    setCefZoomLevel(b, 0.0)
                     SwingUtilities.invokeLater {
                         applyTheme()
                         pushXml()
+                        attachCanvasZoom(b)
                     }
                 }
             }, b.cefBrowser)
             FileDocumentManager.getInstance().getDocument(file)?.addDocumentListener(documentListener)
             b.loadURL(BpmnAssets.root.resolve("index.html").toUri().toString())
             panel.add(b.component, BorderLayout.CENTER)
-            b.component.addMouseWheelListener { event ->
-                if (!loaded) return@addMouseWheelListener
-                if (!(event.isControlDown || event.isMetaDown)) return@addMouseWheelListener
-                event.consume()
-                val rotation = if (event.preciseWheelRotation != 0.0) event.preciseWheelRotation else event.wheelRotation.toDouble()
-                val factor = if (rotation > 0) 0.92 else 1.08
-                b.cefBrowser.executeJavaScript(
-                    "window.__zoomBy && window.__zoomBy(" + factor + "," + event.x + "," + event.y + ");",
-                    b.cefBrowser.url,
-                    0,
-                )
-            }
             panel.addComponentListener(object : ComponentAdapter() {
                 override fun componentResized(e: ComponentEvent) {
                     if (loaded) SwingUtilities.invokeLater { notifyResized() }
@@ -258,8 +254,139 @@ class BpmnFileEditor(
     override fun removePropertyChangeListener(listener: PropertyChangeListener) {}
     override fun getFile(): VirtualFile = file
     override fun dispose() {
+        zoomTimer?.stop()
+        zoomTimer = null
         themeConnection.disconnect()
         FileDocumentManager.getInstance().getDocument(file)?.removeDocumentListener(documentListener)
         browser?.let { Disposer.dispose(it) }
+    }
+
+    private fun attachCanvasZoom(b: JBCefBrowser) {
+        val mag = Magnificator { scale, at ->
+            jsZoomBy(b, scale, at.x.toDouble(), at.y.toDouble())
+            at
+        }
+        panel.putClientProperty(Magnificator.CLIENT_PROPERTY_KEY, mag)
+        b.component.putClientProperty(Magnificator.CLIENT_PROPERTY_KEY, mag)
+        val ui = browserUi(b)
+        if (ui is JComponent) {
+            ui.putClientProperty(Magnificator.CLIENT_PROPERTY_KEY, mag)
+            installAppleMagnify(ui, b)
+        }
+        installAppleMagnify(panel, b)
+        if (zoomTimer == null) {
+            val timer = Timer(16) { redirectCefZoom(b) }
+            timer.isRepeats = true
+            zoomTimer = timer
+        }
+        zoomTimer?.start()
+        setCefZoomLevel(b, 0.0)
+    }
+
+    private fun browserUi(b: JBCefBrowser): Component {
+        try {
+            val method = b.javaClass.methods.find { it.name == "getBrowserComponent" && it.parameterCount == 0 }
+            val component = method?.invoke(b)
+            if (component is Component) return component
+        } catch (_: Throwable) {
+        }
+        try {
+            val ui = b.cefBrowser.uiComponent
+            if (ui is Component) return ui
+        } catch (_: Throwable) {
+        }
+        return b.component
+    }
+
+    private fun redirectCefZoom(b: JBCefBrowser) {
+        if (!loaded) return
+        val level = cefZoomLevel(b)
+        if (cefZoomResetting) {
+            if (abs(level) < 0.0001) {
+                cefZoomResetting = false
+            } else {
+                setCefZoomLevel(b, 0.0)
+            }
+            return
+        }
+        if (abs(level) < 0.0001) return
+        val factor = 1.2.pow(level)
+        cefZoomResetting = true
+        setCefZoomLevel(b, 0.0)
+        jsZoomBy(b, factor, Double.NaN, Double.NaN)
+    }
+
+    private fun cefZoomLevel(b: JBCefBrowser): Double {
+        try {
+            val method = b.javaClass.methods.find { it.name == "getZoomLevel" && it.parameterCount == 0 }
+            val value = method?.invoke(b)
+            if (value is Number) return value.toDouble()
+        } catch (_: Throwable) {
+        }
+        try {
+            val method = b.cefBrowser.javaClass.methods.find { it.name == "getZoomLevel" && it.parameterCount == 0 }
+            val value = method?.invoke(b.cefBrowser)
+            if (value is Number) return value.toDouble()
+        } catch (_: Throwable) {
+        }
+        return 0.0
+    }
+
+    private fun setCefZoomLevel(b: JBCefBrowser, level: Double) {
+        try {
+            val method = b.javaClass.methods.find { it.name == "setZoomLevel" && it.parameterCount == 1 }
+            if (method != null) {
+                method.invoke(b, level)
+                return
+            }
+        } catch (_: Throwable) {
+        }
+        try {
+            b.cefBrowser.javaClass.getMethod("setZoomLevel", java.lang.Double.TYPE).invoke(b.cefBrowser, level)
+        } catch (_: Throwable) {
+        }
+    }
+
+    private fun jsZoomBy(b: JBCefBrowser, factor: Double, x: Double, y: Double) {
+        if (!loaded || !factor.isFinite() || abs(factor - 1.0) < 0.0001) return
+        val sx = if (x.isFinite()) x.toString() else "undefined"
+        val sy = if (y.isFinite()) y.toString() else "undefined"
+        b.cefBrowser.executeJavaScript(
+            "window.__zoomBy && window.__zoomBy(" + factor + "," + sx + "," + sy + ");",
+            b.cefBrowser.url,
+            0,
+        )
+    }
+
+    private fun installAppleMagnify(target: JComponent, b: JBCefBrowser) {
+        try {
+            val gestureUtilities = Class.forName("com.apple.eawt.event.GestureUtilities")
+            val listenerClass = Class.forName("com.apple.eawt.event.MagnificationListener")
+            val eventClass = Class.forName("com.apple.eawt.event.MagnificationEvent")
+            val getMagnification = eventClass.getMethod("getMagnification")
+            val listener = Proxy.newProxyInstance(listenerClass.classLoader, arrayOf(listenerClass)) { _, method, args ->
+                if (method.name == "magnify" && !args.isNullOrEmpty()) {
+                    val mag = (getMagnification.invoke(args[0]) as Number).toDouble()
+                    val factor = 1.0 + mag
+                    val at = pointerIn(target)
+                    jsZoomBy(b, factor, at.x.toDouble(), at.y.toDouble())
+                }
+                null
+            }
+            val gestureListener = Class.forName("com.apple.eawt.event.GestureListener")
+            gestureUtilities.getMethod("addGestureListenerTo", JComponent::class.java, gestureListener)
+                .invoke(null, target, listener)
+        } catch (_: Throwable) {
+        }
+    }
+
+    private fun pointerIn(target: Component): Point {
+        return try {
+            val loc = MouseInfo.getPointerInfo()?.location ?: return Point(target.width / 2, target.height / 2)
+            SwingUtilities.convertPointFromScreen(loc, target)
+            loc
+        } catch (_: Throwable) {
+            Point(target.width / 2, target.height / 2)
+        }
     }
 }
