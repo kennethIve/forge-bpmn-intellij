@@ -18,6 +18,7 @@ object BpmnAssets {
         "assets/element-templates.css",
         "assets/element-template-chooser.css",
         "assets/popup-menu.css",
+        "assets/bpmn-js-token-simulation.css",
         "assets/bpmn-font/css/bpmn-embedded.css",
         "assets/bpmn-font/font/bpmn.woff2",
         "assets/bpmn-font/font/bpmn.woff",
