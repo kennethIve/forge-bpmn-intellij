@@ -1,7 +1,8 @@
 package com.forge.bpmn
 
 import com.intellij.ide.ui.LafManagerListener
-import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.command.CommandProcessor
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.editor.event.DocumentListener
@@ -61,12 +62,14 @@ class BpmnFileEditor(
             query.addHandler { xml ->
                 applyingFromJs = true
                 try {
-                    WriteCommandAction.runWriteCommandAction(project) {
-                        val doc = FileDocumentManager.getInstance().getDocument(file)
-                        if (doc != null) {
-                            doc.setText(xml)
-                        } else {
-                            file.setBinaryContent(xml.toByteArray(Charsets.UTF_8))
+                    CommandProcessor.getInstance().runUndoTransparentAction {
+                        ApplicationManager.getApplication().runWriteAction {
+                            val doc = FileDocumentManager.getInstance().getDocument(file)
+                            if (doc != null) {
+                                if (doc.text != xml) doc.setText(xml)
+                            } else {
+                                file.setBinaryContent(xml.toByteArray(Charsets.UTF_8))
+                            }
                         }
                     }
                 } finally {
@@ -91,7 +94,7 @@ class BpmnFileEditor(
             panel.add(b.component, BorderLayout.CENTER)
             panel.addComponentListener(object : ComponentAdapter() {
                 override fun componentResized(e: ComponentEvent) {
-                    if (loaded) SwingUtilities.invokeLater { fitViewport() }
+                    if (loaded) SwingUtilities.invokeLater { notifyResized() }
                 }
             })
             themeConnection.subscribe(LafManagerListener.TOPIC, LafManagerListener {
@@ -122,6 +125,16 @@ class BpmnFileEditor(
         val xml = String(file.contentsToByteArray(), Charsets.UTF_8)
         b.cefBrowser.executeJavaScript(
             "window.__loadXml && window.__loadXml(" + jsString(xml) + ");",
+            b.cefBrowser.url,
+            0,
+        )
+    }
+
+    private fun notifyResized() {
+        val b = browser ?: return
+        if (!loaded) return
+        b.cefBrowser.executeJavaScript(
+            "window.__resized && window.__resized();",
             b.cefBrowser.url,
             0,
         )
