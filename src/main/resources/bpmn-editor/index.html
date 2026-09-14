@@ -14,8 +14,9 @@
     #canvas { position: relative; flex: 1; min-width: 0; min-height: 0; background: var(--canvas); }
     #canvas .bjs-container, #canvas .djs-container { position: absolute !important; inset: 0; width: auto !important; height: auto !important; background: var(--canvas) !important; background-image: none !important; }
     .djs-grid, .layer-djs-grid, svg.djs-grid, .djs-grid-container { display: none !important; }
-    #toggle-props { width: 18px; flex-shrink: 0; border: 0; border-left: 1px solid var(--border); background: var(--panel); color: var(--muted); cursor: pointer; font: 14px/1 "JetBrains Mono", monospace; padding: 0; }
-    #toggle-props:hover { background: var(--hover); color: var(--fg); }
+    #toggle-props { width: 22px; flex-shrink: 0; border: 0; border-left: 1px solid var(--border); background: var(--panel); color: var(--muted); cursor: pointer; font: 13px/1 "JetBrains Mono", monospace; padding: 0; display: flex; align-items: center; justify-content: center; }
+    #toggle-props:hover, #toggle-props:focus-visible { background: var(--palette-hover); color: var(--palette-fg); outline: none; }
+    #toggle-props:active { background: var(--hover); color: var(--fg); }
     #properties { width: 280px; flex-shrink: 0; border-left: 1px solid var(--border); background: var(--panel); overflow: hidden; color: var(--fg); }
     #app.props-collapsed #properties { display: none; }
     #properties .bio-properties-panel-container, #properties .bio-properties-panel { height: 100%; background: var(--panel) !important; color: var(--fg) !important; }
