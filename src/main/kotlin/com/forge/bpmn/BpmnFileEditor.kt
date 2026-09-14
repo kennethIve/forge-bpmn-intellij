@@ -75,6 +75,10 @@ class BpmnFileEditor(
                         query.inject("JSON.stringify(xml)") +
                         " };"
                     br?.executeJavaScript(inject, br.url, 0)
+                    try {
+                        br?.javaClass?.getMethod("setZoomLevel", java.lang.Double.TYPE)?.invoke(br, 0.0)
+                    } catch (_: Throwable) {
+                    }
                     SwingUtilities.invokeLater {
                         applyTheme()
                         pushXml()
@@ -84,6 +88,18 @@ class BpmnFileEditor(
             FileDocumentManager.getInstance().getDocument(file)?.addDocumentListener(documentListener)
             b.loadURL(BpmnAssets.root.resolve("index.html").toUri().toString())
             panel.add(b.component, BorderLayout.CENTER)
+            b.component.addMouseWheelListener { event ->
+                if (!loaded) return@addMouseWheelListener
+                if (!(event.isControlDown || event.isMetaDown)) return@addMouseWheelListener
+                event.consume()
+                val rotation = if (event.preciseWheelRotation != 0.0) event.preciseWheelRotation else event.wheelRotation.toDouble()
+                val factor = if (rotation > 0) 0.92 else 1.08
+                b.cefBrowser.executeJavaScript(
+                    "window.__zoomBy && window.__zoomBy(" + factor + "," + event.x + "," + event.y + ");",
+                    b.cefBrowser.url,
+                    0,
+                )
+            }
             panel.addComponentListener(object : ComponentAdapter() {
                 override fun componentResized(e: ComponentEvent) {
                     if (loaded) SwingUtilities.invokeLater { notifyResized() }
