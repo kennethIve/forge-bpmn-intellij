@@ -109,6 +109,13 @@
       stroke: none !important;
     }
     .bts-palette { position: absolute; top: 60px; left: 20px; z-index: 1000; }
+    .bts-palette.hidden,
+    .bjs-container:not(.simulation) .bts-palette,
+    #app:not(.simulating) .bts-palette { display: none !important; }
+    .bjs-container.simulation .djs-palette,
+    .djs-palette.hidden,
+    #app.simulating .djs-palette { display: none !important; }
+    .bjs-container.simulation .djs-overlay:not(.djs-overlay-bts-context-menu, .djs-overlay-bts-element-notification, .djs-overlay-bts-token-count, .djs-overlay-drilldown) { display: none !important; }
     .bjs-powered-by { opacity: .5; }
     html.dark .djs-minimap { background: #3C3F44 !important; color: #DFE1E5 !important; border: 1px solid #4A4E55 !important; }
     html.dark .djs-parent {
@@ -140,7 +147,6 @@
     html.dark .djs-popup-entry-docs { background: #3C3F44 !important; color: #DFE1E5 !important; border-color: #43454A !important; }
     html.dark .djs-container svg.new-parent { background: #3A3F48 !important; }
     html.dark .djs-container svg.drop-not-ok { background: #4A3535 !important; }
-    .djs-palette.hidden { display: none !important; }
     #app.simulating #properties, #app.simulating #toggle-props { display: none; }
     .bpmn-lint-error { background: #c45c58; }
     .bpmn-lint-warning { background: #c4a574; }
