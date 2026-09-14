@@ -10,7 +10,13 @@
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: var(--bg, #f7f8fa); color: var(--fg, #1e1f22); font: 13px/1.45 "JetBrains Sans", "IBM Plex Sans", "Segoe UI", sans-serif; }
     :root { --bg:#f7f8fa; --canvas:#ffffff; --shape-fill:#ffffff; --flow:#000000; --label:#000000; --panel:#f7f8fa; --fg:#1e1f22; --muted:#6c707e; --border:#d3d5db; --input:#ffffff; --hover:#ebecf0; --accent:#3574f0; --palette:#F7F8FA; --palette-fg:#1E1F22; --palette-border:#D3D5DB; --palette-hover:#EBECF0; }
     html.dark { --bg:#2B2D30; --canvas:#161616; --shape-fill:#262626; --flow:#C6C6C6; --label:#F4F4F4; --panel:#2B2D30; --fg:#DFE1E5; --muted:#9DA0A8; --border:#393B40; --input:#1E1F22; --hover:#3C3F44; --accent:#548AF7; --palette:#2B2D30; --palette-fg:#DFE1E5; --palette-border:#43454A; --palette-hover:#3C3F44; }
-    #app { position: absolute; inset: 0; display: flex; min-height: 0; min-width: 0; background: var(--bg); }
+    #app { position: absolute; inset: 0; display: flex; flex-direction: column; min-height: 0; min-width: 0; background: var(--bg); }
+    #sim-bar { flex-shrink: 0; height: 34px; display: flex; align-items: center; gap: 10px; padding: 0 10px; border-bottom: 1px solid var(--border); background: var(--panel); color: var(--fg); z-index: 20; }
+    #sim-btn { appearance: none; border: 1px solid var(--accent); background: var(--accent); color: #fff; font: 600 12px/1 "JetBrains Sans", "IBM Plex Sans", sans-serif; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+    #sim-btn:hover { filter: brightness(1.08); }
+    #sim-btn.active { background: transparent; color: var(--fg); border-color: var(--border); }
+    #sim-hint { font-size: 12px; color: var(--muted); }
+    #work { flex: 1; display: flex; min-height: 0; min-width: 0; }
     #canvas { position: relative; flex: 1; min-width: 0; min-height: 0; background: var(--canvas); }
     #canvas .bjs-container, #canvas .djs-container { position: absolute !important; inset: 0; width: auto !important; height: auto !important; background: var(--canvas) !important; background-image: none !important; }
     .djs-grid, .layer-djs-grid, svg.djs-grid, .djs-grid-container { display: none !important; }
@@ -74,7 +80,7 @@
     html.dark .djs-popup-entry-docs { background: #3C3F44 !important; color: #DFE1E5 !important; border-color: #43454A !important; }
     html.dark .djs-container svg.new-parent { background: #3A3F48 !important; }
     html.dark .djs-container svg.drop-not-ok { background: #4A3535 !important; }
-    .bts-toggle-mode { left: 72px; top: 16px; z-index: 12; background: var(--palette) !important; color: var(--palette-fg) !important; border: 1px solid var(--palette-border); font-size: 12px !important; padding: 5px 8px !important; }
+    .bts-toggle-mode { display: none !important; }
     .djs-palette.hidden { display: none !important; }
     #app.simulating #properties, #app.simulating #toggle-props { display: none; }
     .bpmn-lint-error { background: #c45c58; }
@@ -83,9 +89,15 @@
 </head>
 <body>
   <div id="app">
-    <div id="canvas"></div>
-    <button type="button" id="toggle-props" title="Hide properties" aria-expanded="true">‹</button>
-    <aside id="properties"></aside>
+    <div id="sim-bar">
+      <button type="button" id="sim-btn" title="Run token simulation">Simulate</button>
+      <span id="sim-hint">Start simulation, then click the play icon on a start event</span>
+    </div>
+    <div id="work">
+      <div id="canvas"></div>
+      <button type="button" id="toggle-props" title="Hide properties" aria-expanded="true">‹</button>
+      <aside id="properties"></aside>
+    </div>
   </div>
   <script src="camunda-cloud-modeler.production.min.js"></script>
   <script>
@@ -191,6 +203,25 @@
     modeler.on("tokenSimulation.toggleMode", function (e) {
       simulating = !!(e && e.active);
       document.getElementById("app").classList.toggle("simulating", simulating);
+      var btn = document.getElementById("sim-btn");
+      var hint = document.getElementById("sim-hint");
+      if (btn) {
+        btn.textContent = simulating ? "Stop" : "Simulate";
+        btn.classList.toggle("active", simulating);
+      }
+      if (hint) hint.textContent = simulating
+        ? "Click the play icon on a start event to run tokens"
+        : "Start simulation, then click the play icon on a start event";
+    });
+    window.__toggleSimulation = function (on) {
+      try {
+        var mode = modeler.get("toggleMode");
+        if (typeof on === "boolean") mode.toggleMode(on);
+        else mode.toggleMode();
+      } catch (err) {}
+    };
+    document.getElementById("sim-btn").addEventListener("click", function () {
+      window.__toggleSimulation();
     });
 
     function paintLint(issues) {
