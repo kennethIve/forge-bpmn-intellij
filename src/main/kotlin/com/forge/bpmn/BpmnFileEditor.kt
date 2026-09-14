@@ -36,9 +36,7 @@ import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.SwingConstants
 import javax.swing.SwingUtilities
-import javax.swing.Timer
 import kotlin.math.abs
-import kotlin.math.pow
 
 class BpmnFileEditor(
     private val project: Project,
@@ -50,8 +48,6 @@ class BpmnFileEditor(
     private var loaded = false
     private var diagramActive = true
     private val themeConnection = project.messageBus.connect()
-    private var zoomTimer: Timer? = null
-    private var cefZoomResetting = false
     private val documentListener = object : DocumentListener {
         override fun documentChanged(event: DocumentEvent) {
             if (!applyingFromJs && loaded && diagramActive) {
@@ -85,7 +81,6 @@ class BpmnFileEditor(
                         query.inject("JSON.stringify(xml)") +
                         " };"
                     br?.executeJavaScript(inject, br.url, 0)
-                    setCefZoomLevel(b, 0.0)
                     SwingUtilities.invokeLater {
                         applyTheme()
                         pushXml()
@@ -254,8 +249,6 @@ class BpmnFileEditor(
     override fun removePropertyChangeListener(listener: PropertyChangeListener) {}
     override fun getFile(): VirtualFile = file
     override fun dispose() {
-        zoomTimer?.stop()
-        zoomTimer = null
         themeConnection.disconnect()
         FileDocumentManager.getInstance().getDocument(file)?.removeDocumentListener(documentListener)
         browser?.let { Disposer.dispose(it) }
@@ -274,13 +267,6 @@ class BpmnFileEditor(
             installAppleMagnify(ui, b)
         }
         installAppleMagnify(panel, b)
-        if (zoomTimer == null) {
-            val timer = Timer(16) { redirectCefZoom(b) }
-            timer.isRepeats = true
-            zoomTimer = timer
-        }
-        zoomTimer?.start()
-        setCefZoomLevel(b, 0.0)
     }
 
     private fun browserUi(b: JBCefBrowser): Component {
@@ -296,55 +282,6 @@ class BpmnFileEditor(
         } catch (_: Throwable) {
         }
         return b.component
-    }
-
-    private fun redirectCefZoom(b: JBCefBrowser) {
-        if (!loaded) return
-        val level = cefZoomLevel(b)
-        if (cefZoomResetting) {
-            if (abs(level) < 0.0001) {
-                cefZoomResetting = false
-            } else {
-                setCefZoomLevel(b, 0.0)
-            }
-            return
-        }
-        if (abs(level) < 0.0001) return
-        val factor = 1.2.pow(level)
-        cefZoomResetting = true
-        setCefZoomLevel(b, 0.0)
-        jsZoomBy(b, factor, Double.NaN, Double.NaN)
-    }
-
-    private fun cefZoomLevel(b: JBCefBrowser): Double {
-        try {
-            val method = b.javaClass.methods.find { it.name == "getZoomLevel" && it.parameterCount == 0 }
-            val value = method?.invoke(b)
-            if (value is Number) return value.toDouble()
-        } catch (_: Throwable) {
-        }
-        try {
-            val method = b.cefBrowser.javaClass.methods.find { it.name == "getZoomLevel" && it.parameterCount == 0 }
-            val value = method?.invoke(b.cefBrowser)
-            if (value is Number) return value.toDouble()
-        } catch (_: Throwable) {
-        }
-        return 0.0
-    }
-
-    private fun setCefZoomLevel(b: JBCefBrowser, level: Double) {
-        try {
-            val method = b.javaClass.methods.find { it.name == "setZoomLevel" && it.parameterCount == 1 }
-            if (method != null) {
-                method.invoke(b, level)
-                return
-            }
-        } catch (_: Throwable) {
-        }
-        try {
-            b.cefBrowser.javaClass.getMethod("setZoomLevel", java.lang.Double.TYPE).invoke(b.cefBrowser, level)
-        } catch (_: Throwable) {
-        }
     }
 
     private fun jsZoomBy(b: JBCefBrowser, factor: Double, x: Double, y: Double) {
