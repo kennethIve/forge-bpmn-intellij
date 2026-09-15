@@ -77,44 +77,86 @@
     .bjs-container.simulation .bts-toggle-mode:hover {
       border-color: var(--token-sim-on-border) !important;
     }
-    /* Node play pads: quiet circle chips, no white squares / neon flood */
+    /* Node play pads: quiet 16–18px circles; startable always-visible, others show-hover */
+    .djs-overlay-bts-context-menu .bts-context-pad,
+    .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled),
     .bts-context-pad,
     .bts-context-pad:not(.disabled) {
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
-      width: 22px !important;
-      height: 22px !important;
-      box-sizing: border-box;
+      width: 17px !important;
+      height: 17px !important;
+      min-width: 17px !important;
+      min-height: 17px !important;
+      box-sizing: border-box !important;
       background: transparent !important;
       background-color: transparent !important;
       color: var(--muted) !important;
       border: 1px solid transparent !important;
       border-radius: 50% !important;
-      opacity: 1 !important;
-      font-size: 12px !important;
+      opacity: .35 !important;
+      font-size: 10px !important;
       box-shadow: none !important;
       padding: 0 !important;
+      margin: 0 !important;
     }
+    /* Kill remaining white/grey fills from upstream on pad + children/svg */
+    .djs-overlay-bts-context-menu .bts-context-pad *,
+    .djs-overlay-bts-context-menu .bts-context-pad svg,
+    .djs-overlay-bts-context-menu .bts-context-pad .bts-icon,
+    .bts-context-pad *,
+    .bts-context-pad svg,
+    .bts-context-pad .bts-icon {
+      background: transparent !important;
+      background-color: transparent !important;
+      box-shadow: none !important;
+    }
+    .djs-overlay-bts-context-menu .bts-context-pad .bts-icon,
+    .bts-context-pad .bts-icon {
+      width: 11px !important;
+      height: 11px !important;
+    }
+    .djs-overlay-bts-context-menu .bts-context-pad svg,
+    .bts-context-pad svg {
+      width: 11px !important;
+      height: 11px !important;
+    }
+    /* Full opacity on pad hover / focus or when node overlay is hovered */
+    .djs-overlays.hover .bts-context-pad,
+    .djs-overlays.hover .bts-context-pad:not(.disabled),
     .bts-context-pad:not(.disabled):hover,
     .bts-context-pad:not(.disabled):focus-visible,
-    .bts-context-pad:hover {
-      background: var(--hover) !important;
-      background-color: var(--hover) !important;
-      color: var(--fg) !important;
-      border-color: var(--border) !important;
-    }
-    .bts-context-pad.active,
-    .bts-context-pad:not(.disabled).active {
+    .bts-context-pad:hover,
+    .bts-context-pad:focus-visible {
+      opacity: 1 !important;
       background: transparent !important;
       background-color: transparent !important;
       color: var(--fg) !important;
-      border: 1px solid var(--token-sim-on-border) !important;
+      border-color: transparent !important;
     }
-    .bts-context-pad.disabled {
+    /* Upstream: .show-hover pads stay hidden until overlay/node hover (startable pads lack this class) */
+    .djs-overlays:not(.hover) .bts-context-pad:not(:hover):not(:focus).show-hover,
+    .djs-overlays:not(.hover) .djs-overlay-bts-context-menu .bts-context-pad:not(:hover):not(:focus).show-hover {
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+    .bts-context-pad.active,
+    .bts-context-pad:not(.disabled).active,
+    .djs-overlay-bts-context-menu .bts-context-pad.active {
       background: transparent !important;
+      background-color: transparent !important;
+      color: var(--fg) !important;
+      opacity: 1 !important;
+      border: 1px solid var(--token-sim-on-border) !important;
+      box-shadow: none !important;
+    }
+    .bts-context-pad.disabled,
+    .djs-overlay-bts-context-menu .bts-context-pad.disabled {
+      background: transparent !important;
+      background-color: transparent !important;
       color: var(--muted) !important;
-      opacity: .45 !important;
+      opacity: .35 !important;
       border-color: transparent !important;
     }
     /* Top sim palette / ActionButton chips */
@@ -250,7 +292,7 @@
       border-color: var(--token-sim-on-border) !important;
     }
     .bts-token-count { background: var(--palette) !important; color: var(--fg) !important; }
-    .bts-icon, .bts-toggle-mode .bts-icon, .bts-context-pad .bts-icon, .bts-palette .bts-icon {
+    .bts-icon, .bts-toggle-mode .bts-icon, .bts-palette .bts-icon {
       display: inline-flex !important;
       align-items: center;
       justify-content: center;
@@ -258,12 +300,33 @@
       height: 14px;
       color: inherit !important;
     }
-    .bts-icon svg, .bts-toggle-mode svg, .bts-context-pad svg, .bts-palette svg,
+    .bts-icon svg, .bts-toggle-mode svg, .bts-palette svg,
     .bts-set-animation-speed svg {
       display: block !important;
       width: 14px !important;
       height: 14px !important;
       overflow: visible;
+    }
+    /* Play-pad icons stay smaller than toggle/palette chips */
+    .djs-overlay-bts-context-menu .bts-context-pad .bts-icon,
+    .bts-context-pad .bts-icon {
+      display: inline-flex !important;
+      align-items: center;
+      justify-content: center;
+      width: 11px !important;
+      height: 11px !important;
+      color: inherit !important;
+      background: transparent !important;
+      background-color: transparent !important;
+    }
+    .djs-overlay-bts-context-menu .bts-context-pad svg,
+    .bts-context-pad svg {
+      display: block !important;
+      width: 11px !important;
+      height: 11px !important;
+      overflow: visible;
+      background: transparent !important;
+      background-color: transparent !important;
     }
     .bts-icon svg path, .bts-icon svg rect,
     .bts-toggle-mode svg path, .bts-context-pad svg path, .bts-palette svg path,
