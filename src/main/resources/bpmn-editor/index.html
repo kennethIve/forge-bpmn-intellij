@@ -196,11 +196,34 @@
       color: var(--fg) !important;
       border-color: var(--border) !important;
     }
-    .bts-palette .bts-entry.active {
+    .bts-palette .bts-entry.active,
+    .bts-palette .bts-entry.bts-play-pause.active,
+    .bts-play-pause.active,
+    .bjs-container.paused .bts-play-pause.active,
+    .bjs-container.simulation .bts-palette .bts-entry.active {
       background: var(--token-sim-on-fill) !important;
       background-color: var(--token-sim-on-fill) !important;
       color: var(--fg) !important;
       border: 1px solid var(--token-sim-on-border) !important;
+      box-shadow: none !important;
+    }
+    /* Soften solid green node notifications / scopes */
+    .bts-element-notification.success,
+    .bts-notifications .bts-notification.success {
+      background: var(--token-sim-on-fill) !important;
+      background-color: var(--token-sim-on-fill) !important;
+      color: var(--fg) !important;
+      border: 1px solid var(--token-sim-on-border) !important;
+    }
+    .bts-scopes .bts-scope.active,
+    .bts-token-count {
+      background: var(--palette) !important;
+      color: var(--fg) !important;
+      border: 1px solid var(--border) !important;
+    }
+    .bts-token-count.waiting,
+    .bts-token-count:not(.inactive) {
+      border-color: var(--token-sim-on-border) !important;
     }
     .bts-palette .bts-entry.disabled {
       color: var(--muted) !important;
