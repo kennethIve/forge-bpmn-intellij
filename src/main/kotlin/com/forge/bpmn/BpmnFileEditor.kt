@@ -203,14 +203,15 @@ class BpmnFileEditor(
         if (!loaded) return
         val dark = !JBColor.isBright()
         val scheme = EditorColorsManager.getInstance().globalScheme
-        val canvas = hex(scheme.defaultBackground)
-        val fg = hex(scheme.defaultForeground)
-        val panelBg = hex(JBColor.namedColor("Panel.background", JBColor.PanelBackground))
+        // Fixed BPMN tokens so Light IDE never keeps a charcoal canvas/shapes.
+        val canvas = if (dark) "#1E1F22" else "#F7F8FA"
+        val panelBg = if (dark) "#2B2D30" else "#FFFFFF"
+        val fg = if (dark) "#DFE1E5" else "#1E1F22"
+        val accent = "#3574F0"
         val border = hex(JBColor.namedColor("Borders.color", JBColor.border()))
         val muted = hex(JBColor.namedColor("Label.infoForeground", JBColor.GRAY))
         val input = hex(JBColor.namedColor("TextField.background", scheme.defaultBackground))
         val hover = hex(JBColor.namedColor("ActionButton.hoverBackground", JBColor.GRAY))
-        val accent = hex(JBColor.namedColor("Link.activeForeground", JBColor.BLUE))
         panel.background = JBColor.PanelBackground
         b.component.background = JBColor.PanelBackground
         b.cefBrowser.executeJavaScript(
