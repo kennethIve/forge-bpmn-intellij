@@ -143,13 +143,24 @@
     }
     .bts-context-pad.active,
     .bts-context-pad:not(.disabled).active,
-    .djs-overlay-bts-context-menu .bts-context-pad.active {
+    .djs-overlay-bts-context-menu .bts-context-pad.active,
+    .bts-context-pad:not(.disabled):active,
+    .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):active {
       background: transparent !important;
       background-color: transparent !important;
       color: var(--fg) !important;
       opacity: 1 !important;
       border: 1px solid var(--token-sim-on-border) !important;
       box-shadow: none !important;
+    }
+    /* Startable pads (no .show-hover) show soft green border while sim is ON —
+       library rarely toggles .active on the play pad itself. */
+    .bjs-container.simulation .bts-context-pad:not(.disabled):not(.show-hover),
+    .bjs-container.simulation .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):not(.show-hover),
+    #app.simulating .bts-context-pad:not(.disabled):not(.show-hover) {
+      opacity: 1 !important;
+      border: 1px solid var(--token-sim-on-border) !important;
+      color: var(--fg) !important;
     }
     .bts-context-pad.disabled,
     .djs-overlay-bts-context-menu .bts-context-pad.disabled {
