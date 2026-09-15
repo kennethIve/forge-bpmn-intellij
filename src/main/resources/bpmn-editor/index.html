@@ -77,7 +77,7 @@
     .bjs-container.simulation .bts-toggle-mode:hover {
       border-color: var(--token-sim-on-border) !important;
     }
-    /* Node play pads: quiet 16–18px circles; startable always-visible, others show-hover */
+    /* Node play pads: quiet 16–18px squares; startable always-visible, others show-hover */
     .djs-overlay-bts-context-menu .bts-context-pad,
     .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled),
     .bts-context-pad,
@@ -94,12 +94,28 @@
       background-color: transparent !important;
       color: var(--muted) !important;
       border: 1px solid transparent !important;
-      border-radius: 50% !important;
+      border-radius: 3px !important;
       opacity: .35 !important;
       font-size: 10px !important;
       box-shadow: none !important;
       padding: 0 !important;
       margin: 0 !important;
+    }
+    /* Separate overlapping gateway pads: Trigger left, route-select right (~9px gap) */
+    .bts-context-pad[title="Trigger Event"],
+    .djs-overlay-bts-context-menu .bts-context-pad[title="Trigger Event"] {
+      transform: none !important;
+    }
+    .bts-context-pad[title="Set Sequence Flow"],
+    .djs-overlay-bts-context-menu .bts-context-pad[title="Set Sequence Flow"] {
+      transform: translate(26px, 0) !important;
+    }
+    /* Pause pads offset the other way so they do not stack on Trigger */
+    .bts-context-pad[title="Add pause point"],
+    .bts-context-pad[title="Remove pause point"],
+    .djs-overlay-bts-context-menu .bts-context-pad[title="Add pause point"],
+    .djs-overlay-bts-context-menu .bts-context-pad[title="Remove pause point"] {
+      transform: translate(-26px, 0) !important;
     }
     /* Kill remaining white/grey fills from upstream on pad + children/svg */
     .djs-overlay-bts-context-menu .bts-context-pad *,
@@ -153,7 +169,7 @@
       border: 1px solid var(--token-sim-on-border) !important;
       box-shadow: none !important;
     }
-    /* Startable pads (no .show-hover) show soft green border while sim is ON —
+    /* Startable pads (no .show-hover): soft 1px green border on the square while sim is ON —
        library rarely toggles .active on the play pad itself. */
     .bjs-container.simulation .bts-context-pad:not(.disabled):not(.show-hover),
     .bjs-container.simulation .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):not(.show-hover),
