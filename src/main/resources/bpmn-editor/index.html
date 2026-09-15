@@ -77,7 +77,8 @@
     .bjs-container.simulation .bts-toggle-mode:hover {
       border-color: var(--token-sim-on-border) !important;
     }
-    /* Node play pads: quiet 16–18px squares; startable always-visible, others show-hover */
+    /* Node play pads: Kenneth gray chips — 17×17, radius 3px; no green/blue/accent rim.
+       Idle opacity 1 (no .35 fade). Gateway offsets preserved. Toggle/palette green left alone. */
     .djs-overlay-bts-context-menu .bts-context-pad,
     .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled),
     .bts-context-pad,
@@ -90,16 +91,25 @@
       min-width: 17px !important;
       min-height: 17px !important;
       box-sizing: border-box !important;
-      background: transparent !important;
-      background-color: transparent !important;
-      color: var(--muted) !important;
-      border: 1px solid transparent !important;
+      background: #EBECF0 !important;
+      background-color: #EBECF0 !important;
+      color: #818594 !important;
+      border: none !important;
       border-radius: 3px !important;
-      opacity: .35 !important;
+      opacity: 1 !important;
       font-size: 10px !important;
       box-shadow: none !important;
       padding: 0 !important;
       margin: 0 !important;
+    }
+    html.dark .djs-overlay-bts-context-menu .bts-context-pad,
+    html.dark .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled),
+    html.dark .bts-context-pad,
+    html.dark .bts-context-pad:not(.disabled) {
+      background: #3C3F41 !important;
+      background-color: #3C3F41 !important;
+      color: #6C707E !important;
+      border: none !important;
     }
     /* Separate overlapping gateway pads: Trigger left, route-select right (~9px gap) */
     .bts-context-pad[title="Trigger Event"],
@@ -117,7 +127,7 @@
     .djs-overlay-bts-context-menu .bts-context-pad[title="Remove pause point"] {
       transform: translate(-26px, 0) !important;
     }
-    /* Kill remaining white/grey fills from upstream on pad + children/svg */
+    /* Kill remaining white/grey fills from upstream on pad children/svg (chip fill stays on pad) */
     .djs-overlay-bts-context-menu .bts-context-pad *,
     .djs-overlay-bts-context-menu .bts-context-pad svg,
     .djs-overlay-bts-context-menu .bts-context-pad .bts-icon,
@@ -138,53 +148,91 @@
       width: 11px !important;
       height: 11px !important;
     }
-    /* Full opacity on pad hover / focus or when node overlay is hovered */
-    .djs-overlays.hover .bts-context-pad,
-    .djs-overlays.hover .bts-context-pad:not(.disabled),
-    .bts-context-pad:not(.disabled):hover,
-    .bts-context-pad:not(.disabled):focus-visible,
-    .bts-context-pad:hover,
-    .bts-context-pad:focus-visible {
-      opacity: 1 !important;
-      background: transparent !important;
-      background-color: transparent !important;
-      color: var(--fg) !important;
-      border-color: transparent !important;
-    }
     /* Upstream: .show-hover pads stay hidden until overlay/node hover (startable pads lack this class) */
     .djs-overlays:not(.hover) .bts-context-pad:not(:hover):not(:focus).show-hover,
     .djs-overlays:not(.hover) .djs-overlay-bts-context-menu .bts-context-pad:not(:hover):not(:focus).show-hover {
       opacity: 0 !important;
       pointer-events: none !important;
     }
+    /* Overlay hover: reveal pads at idle chip chrome */
+    .djs-overlays.hover .bts-context-pad,
+    .djs-overlays.hover .bts-context-pad:not(.disabled) {
+      opacity: 1 !important;
+    }
+    /* Active (.active class): gray chip fill — never green/blue rim; idle stays base while sim ON */
     .bts-context-pad.active,
     .bts-context-pad:not(.disabled).active,
-    .djs-overlay-bts-context-menu .bts-context-pad.active,
-    .bts-context-pad:not(.disabled):active,
-    .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):active {
-      background: transparent !important;
-      background-color: transparent !important;
-      color: var(--fg) !important;
+    .djs-overlay-bts-context-menu .bts-context-pad.active {
+      background: #D3D5DB !important;
+      background-color: #D3D5DB !important;
+      color: #1E1F22 !important;
       opacity: 1 !important;
-      border: 1px solid var(--token-sim-on-border) !important;
+      border: none !important;
       box-shadow: none !important;
     }
-    /* Startable pads (no .show-hover): soft 1px green border on the square while sim is ON —
-       library rarely toggles .active on the play pad itself. */
-    .bjs-container.simulation .bts-context-pad:not(.disabled):not(.show-hover),
-    .bjs-container.simulation .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):not(.show-hover),
-    #app.simulating .bts-context-pad:not(.disabled):not(.show-hover) {
+    html.dark .bts-context-pad.active,
+    html.dark .bts-context-pad:not(.disabled).active,
+    html.dark .djs-overlay-bts-context-menu .bts-context-pad.active {
+      background: #5A5D61 !important;
+      background-color: #5A5D61 !important;
+      color: #DFE1E5 !important;
+      border: none !important;
+    }
+    /* Hover / focus-visible */
+    .bts-context-pad:not(.disabled):hover,
+    .bts-context-pad:not(.disabled):focus-visible,
+    .bts-context-pad:hover,
+    .bts-context-pad:focus-visible,
+    .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):hover,
+    .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):focus-visible {
       opacity: 1 !important;
-      border: 1px solid var(--token-sim-on-border) !important;
-      color: var(--fg) !important;
+      background: #DFE1E5 !important;
+      background-color: #DFE1E5 !important;
+      color: #1E1F22 !important;
+      border: none !important;
+    }
+    html.dark .bts-context-pad:not(.disabled):hover,
+    html.dark .bts-context-pad:not(.disabled):focus-visible,
+    html.dark .bts-context-pad:hover,
+    html.dark .bts-context-pad:focus-visible,
+    html.dark .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):hover,
+    html.dark .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):focus-visible {
+      background: #4E5154 !important;
+      background-color: #4E5154 !important;
+      color: #DFE1E5 !important;
+      border: none !important;
+    }
+    /* Pressed (:active): library rarely toggles .active on pads — use active gray so ladder is visible.
+       Same as .active (#D3D5DB / #5A5D61); drop unreachable deeper #C9CCD1 / #65696E on pads. */
+    .bts-context-pad:not(.disabled):active,
+    .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):active {
+      background: #D3D5DB !important;
+      background-color: #D3D5DB !important;
+      color: #1E1F22 !important;
+      opacity: 1 !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+    html.dark .bts-context-pad:not(.disabled):active,
+    html.dark .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):active {
+      background: #5A5D61 !important;
+      background-color: #5A5D61 !important;
+      color: #DFE1E5 !important;
+      border: none !important;
     }
     .bts-context-pad.disabled,
     .djs-overlay-bts-context-menu .bts-context-pad.disabled {
-      background: transparent !important;
-      background-color: transparent !important;
-      color: var(--muted) !important;
+      background: #EBECF0 !important;
+      background-color: #EBECF0 !important;
+      color: #818594 !important;
       opacity: .35 !important;
-      border-color: transparent !important;
+      border: none !important;
+    }
+    html.dark .bts-context-pad.disabled,
+    html.dark .djs-overlay-bts-context-menu .bts-context-pad.disabled {
+      background: #3C3F41 !important;
+      background-color: #3C3F41 !important;
+      color: #6C707E !important;
     }
     /* Top sim palette / ActionButton chips */
     .bts-palette .bts-entry {
