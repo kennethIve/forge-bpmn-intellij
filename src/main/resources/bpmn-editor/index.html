@@ -8,8 +8,8 @@
   <link rel="stylesheet" href="assets/bpmn-js-token-simulation.css"/>
   <style>
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: var(--bg, #f7f8fa); color: var(--fg, #1e1f22); font: 13px/1.45 "JetBrains Sans", "IBM Plex Sans", "Segoe UI", sans-serif; overscroll-behavior: none; touch-action: none; }
-    :root { --bg:#f7f8fa; --canvas:#ffffff; --shape-fill:#ffffff; --icon:#525252; --flow:#525252; --label:#161616; --panel:#f7f8fa; --fg:#1e1f22; --muted:#6c707e; --border:#d3d5db; --input:#ffffff; --hover:#ebecf0; --accent:#3574f0; --palette:#FAFAFA; --palette-fg:#222222; --palette-border:#CCCCCC; --palette-hover:#EBEBEB; --token-simulation-green-base-44:#10d070; --token-simulation-grey-darken-30:var(--fg); --token-simulation-grey-lighten-56:var(--hover); --token-simulation-grey-base-40:var(--muted); --token-simulation-silver-darken-94:var(--palette); --token-simulation-silver-base-97:var(--panel); --token-simulation-white:#ffffff; }
-    html.dark { --bg:#2B2D30; --canvas:#161616; --shape-fill:#262626; --icon:#C6C6C6; --flow:#C6C6C6; --label:#F4F4F4; --panel:#2B2D30; --fg:#DFE1E5; --muted:#9DA0A8; --border:#393B40; --input:#1E1F22; --hover:#3C3F44; --accent:#548AF7; --palette:#2B2D30; --palette-fg:#C6C6C6; --palette-border:#43454A; --palette-hover:#3C3F44; --token-simulation-grey-darken-30:#DFE1E5; --token-simulation-grey-lighten-56:#3C3F44; --token-simulation-grey-base-40:#9DA0A8; --token-simulation-silver-darken-94:#3C3F44; --token-simulation-silver-base-97:#2B2D30; }
+    :root { --bg:#FFFFFF; --canvas:#F7F8FA; --shape-fill:#FFFFFF; --icon:#1E1F22; --flow:#1E1F22; --label:#1E1F22; --panel:#FFFFFF; --fg:#1E1F22; --muted:#6c707e; --border:#d3d5db; --input:#ffffff; --hover:#ebecf0; --accent:#3574F0; --palette:#FFFFFF; --palette-fg:#1E1F22; --palette-border:#D3D5DB; --palette-hover:#EBECF0; --token-sim-on-fill:rgba(16,208,112,.12); --token-sim-on-border:rgba(16,208,112,.55); --token-simulation-green-base-44:#10d070; --token-simulation-grey-darken-30:var(--fg); --token-simulation-grey-lighten-56:var(--hover); --token-simulation-grey-base-40:var(--muted); --token-simulation-silver-darken-94:var(--palette); --token-simulation-silver-base-97:var(--panel); --token-simulation-white:#ffffff; }
+    html.dark { --bg:#2B2D30; --canvas:#1E1F22; --shape-fill:#2B2D30; --icon:#DFE1E5; --flow:#DFE1E5; --label:#DFE1E5; --panel:#2B2D30; --fg:#DFE1E5; --muted:#9DA0A8; --border:#393B40; --input:#1E1F22; --hover:#3C3F44; --accent:#3574F0; --palette:#2B2D30; --palette-fg:#DFE1E5; --palette-border:#43454A; --palette-hover:#3C3F44; --token-sim-on-fill:rgba(16,208,112,.12); --token-sim-on-border:rgba(16,208,112,.5); --token-simulation-grey-darken-30:#DFE1E5; --token-simulation-grey-lighten-56:#3C3F44; --token-simulation-grey-base-40:#9DA0A8; --token-simulation-silver-darken-94:#3C3F44; --token-simulation-silver-base-97:#2B2D30; }
     #app { position: absolute; inset: 0; display: flex; min-height: 0; min-width: 0; background: var(--bg); }
     #canvas { position: relative; flex: 1; min-width: 0; min-height: 0; background: var(--canvas); touch-action: none; overscroll-behavior: none; }
     #canvas .bjs-container, #canvas .djs-container { position: absolute !important; inset: 0; width: auto !important; height: auto !important; background: var(--canvas) !important; background-image: none !important; }
@@ -45,66 +45,229 @@
       display: inline-flex !important;
       align-items: center;
       position: absolute !important;
-      top: 20px !important;
+      top: 16px !important;
       left: 20px !important;
       z-index: 1000 !important;
+      box-sizing: border-box;
+      min-height: 28px;
+      height: 28px;
       background: var(--palette) !important;
       color: var(--palette-fg) !important;
-      border: 1px solid var(--palette-border);
-      border-radius: 2px;
-      padding: 6px !important;
-      font-size: 16px !important;
+      border: 1px solid var(--palette-border) !important;
+      border-radius: 6px;
+      padding: 4px 10px !important;
+      font-size: 13px !important;
       line-height: 1;
       cursor: pointer;
       user-select: none;
+      box-shadow: none !important;
     }
     .bts-toggle-mode .bts-toggle { margin-left: .25em; display: inline-flex; }
-    .bjs-container.simulation .bts-toggle-mode,
-    .bts-toggle-mode:hover { background: var(--token-simulation-green-base-44, #10d070) !important; color: #fff !important; border-color: transparent; }
+    .bjs-container.simulation .bts-toggle-mode {
+      background: var(--token-sim-on-fill) !important;
+      color: var(--fg) !important;
+      border: 1px solid var(--token-sim-on-border) !important;
+    }
+    .bts-toggle-mode:hover,
+    .bjs-container.simulation .bts-toggle-mode:hover {
+      background: var(--hover) !important;
+      color: var(--fg) !important;
+      border-color: var(--border) !important;
+    }
+    .bjs-container.simulation .bts-toggle-mode:hover {
+      border-color: var(--token-sim-on-border) !important;
+    }
+    /* Node play pads: quiet circle chips, no white squares / neon flood */
     .bts-context-pad,
+    .bts-context-pad:not(.disabled) {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      width: 22px !important;
+      height: 22px !important;
+      box-sizing: border-box;
+      background: transparent !important;
+      background-color: transparent !important;
+      color: var(--muted) !important;
+      border: 1px solid transparent !important;
+      border-radius: 50% !important;
+      opacity: 1 !important;
+      font-size: 12px !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+    }
+    .bts-context-pad:not(.disabled):hover,
+    .bts-context-pad:not(.disabled):focus-visible,
+    .bts-context-pad:hover {
+      background: var(--hover) !important;
+      background-color: var(--hover) !important;
+      color: var(--fg) !important;
+      border-color: var(--border) !important;
+    }
+    .bts-context-pad.active,
+    .bts-context-pad:not(.disabled).active {
+      background: transparent !important;
+      background-color: transparent !important;
+      color: var(--fg) !important;
+      border: 1px solid var(--token-sim-on-border) !important;
+    }
+    .bts-context-pad.disabled {
+      background: transparent !important;
+      color: var(--muted) !important;
+      opacity: .45 !important;
+      border-color: transparent !important;
+    }
+    /* Top sim palette / ActionButton chips */
     .bts-palette .bts-entry {
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
-      width: 30px !important;
-      height: 30px !important;
+      width: 26px !important;
+      height: 26px !important;
       box-sizing: border-box;
+      background: var(--palette) !important;
+      background-color: var(--palette) !important;
+      color: var(--muted) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 6px !important;
+      opacity: 1 !important;
+      font-size: 14px !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      margin-bottom: 6px;
+    }
+    .bts-palette .bts-entry:not(.disabled):hover,
+    .bts-palette .bts-entry:hover {
       background: var(--hover) !important;
+      background-color: var(--hover) !important;
+      color: var(--fg) !important;
+      border-color: var(--border) !important;
+    }
+    .bts-palette .bts-entry.active {
+      background: var(--token-sim-on-fill) !important;
+      background-color: var(--token-sim-on-fill) !important;
+      color: var(--fg) !important;
+      border: 1px solid var(--token-sim-on-border) !important;
+    }
+    .bts-palette .bts-entry.disabled {
+      color: var(--muted) !important;
+      opacity: .45 !important;
+    }
+    .bts-scopes {
+      top: 18px !important;
+      height: 28px;
+      align-items: center;
+    }
+    .bts-scopes .bts-scope {
+      width: 24px !important;
+      height: 24px !important;
+      line-height: 22px !important;
+      font-size: 12px !important;
+      background: var(--palette) !important;
       color: var(--fg) !important;
       border: 1px solid var(--border) !important;
-      border-radius: 2px;
-      opacity: 1 !important;
-      font-size: 16px !important;
+      border-radius: 50% !important;
     }
-    .bts-palette .bts-entry { background: var(--palette) !important; margin-bottom: 6px; }
-    .bts-context-pad:hover,
-    .bts-palette .bts-entry:hover,
-    .bts-palette .bts-entry.active {
-      background: var(--token-simulation-green-base-44, #10d070) !important;
-      color: #fff !important;
-      border-color: transparent !important;
+    .bts-scopes .bts-scope:hover,
+    .bts-scopes .bts-scope.inactive:hover {
+      background: var(--hover) !important;
+      opacity: 1 !important;
+    }
+    .bts-scopes .bts-scope.focussed {
+      box-shadow: 0 0 0 1px var(--token-sim-on-border) !important;
+      border-color: var(--token-sim-on-border) !important;
+    }
+    /* Bottom speed bar: IDE toolbar strip, quiet chips */
+    .bts-set-animation-speed {
+      bottom: 16px !important;
+      height: 30px;
+      box-sizing: border-box;
+      background: var(--panel) !important;
+      background-color: var(--panel) !important;
+      color: var(--fg) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 6px !important;
+      padding: 2px 4px 2px 8px !important;
+      font-size: 12px !important;
+      box-shadow: none !important;
+      overflow: hidden;
+    }
+    .bts-set-animation-speed .bts-animation-speed-buttons {
+      margin-left: 4px !important;
+      gap: 2px;
+      align-items: center;
+    }
+    .bts-set-animation-speed .bts-animation-speed-button {
+      width: 26px !important;
+      height: 24px !important;
+      padding: 0 !important;
+      box-sizing: border-box;
+      display: inline-flex !important;
+      align-items: center;
+      justify-content: center;
+      background: transparent !important;
+      background-color: transparent !important;
+      color: var(--muted) !important;
+      border: 1px solid transparent !important;
+      border-radius: 4px !important;
+      cursor: pointer;
+    }
+    .bts-set-animation-speed .bts-animation-speed-button:hover {
+      background: var(--hover) !important;
+      background-color: var(--hover) !important;
+      color: var(--fg) !important;
+      border-color: var(--border) !important;
+    }
+    .bts-set-animation-speed .bts-animation-speed-button.active {
+      background: var(--token-sim-on-fill) !important;
+      background-color: var(--token-sim-on-fill) !important;
+      color: var(--fg) !important;
+      border: 1px solid var(--token-sim-on-border) !important;
     }
     .bts-log {
       background: var(--panel) !important;
       color: var(--fg) !important;
       border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+    .bts-log .bts-header {
+      background: var(--palette) !important;
+      color: var(--fg) !important;
+      border-bottom: 1px solid var(--border);
+      height: 28px !important;
+    }
+    .bts-log .bts-close { color: var(--muted) !important; }
+    .bts-log .bts-close:hover { color: var(--fg) !important; background: var(--hover) !important; }
+    .bts-log .bts-entry {
+      background: var(--input, var(--panel)) !important;
+      color: var(--fg) !important;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+    .bts-log .bts-entry.success {
+      background: var(--token-sim-on-fill) !important;
+      color: var(--fg) !important;
+      border-color: var(--token-sim-on-border) !important;
     }
     .bts-token-count { background: var(--palette) !important; color: var(--fg) !important; }
     .bts-icon, .bts-toggle-mode .bts-icon, .bts-context-pad .bts-icon, .bts-palette .bts-icon {
       display: inline-flex !important;
       align-items: center;
       justify-content: center;
-      width: 16px;
-      height: 16px;
+      width: 14px;
+      height: 14px;
+      color: inherit !important;
     }
-    .bts-icon svg, .bts-toggle-mode svg, .bts-context-pad svg, .bts-palette svg {
+    .bts-icon svg, .bts-toggle-mode svg, .bts-context-pad svg, .bts-palette svg,
+    .bts-set-animation-speed svg {
       display: block !important;
-      width: 16px !important;
-      height: 16px !important;
+      width: 14px !important;
+      height: 14px !important;
       overflow: visible;
     }
     .bts-icon svg path, .bts-icon svg rect,
-    .bts-toggle-mode svg path, .bts-context-pad svg path, .bts-palette svg path {
+    .bts-toggle-mode svg path, .bts-context-pad svg path, .bts-palette svg path,
+    .bts-set-animation-speed svg path {
       fill: currentColor !important;
       stroke: none !important;
     }
@@ -119,7 +282,7 @@
     .bjs-powered-by { opacity: .5; }
     html.dark .djs-minimap { background: #3C3F44 !important; color: #DFE1E5 !important; border: 1px solid #4A4E55 !important; }
     html.dark .djs-parent {
-      --canvas-fill-color: #161616;
+      --canvas-fill-color: #1E1F22;
       --popup-background-color: #2B2D30;
       --popup-border-color: #43454A;
       --popup-shadow-color: rgba(0,0,0,.45);
@@ -251,7 +414,7 @@
     var modeler = new BpmnModeler({
       container: "#canvas",
       propertiesPanel: { parent: "#properties" },
-      bpmnRenderer: {"defaultFillColor":"var(--shape-fill, #ffffff)","defaultStrokeColor":"var(--icon, #525252)","defaultLabelColor":"var(--label, #161616)"}
+      bpmnRenderer: {"defaultFillColor":"#FFFFFF","defaultStrokeColor":"#1E1F22","defaultLabelColor":"#1E1F22"}
     });
     window.modeler = modeler;
     try {
@@ -324,27 +487,67 @@
       ["bg","panel","fg","muted","border","input","hover","accent"].forEach(function (k) {
         if (t[k]) root.style.setProperty("--" + k, t[k]);
       });
+      var fill, stroke, label, canvas, panel, palette;
       if (dark) {
-        root.style.setProperty("--canvas", "#161616");
-        root.style.setProperty("--shape-fill", "#262626");
-        root.style.setProperty("--icon", "#C6C6C6");
-        root.style.setProperty("--flow", "#C6C6C6");
-        root.style.setProperty("--label", "#F4F4F4");
-        root.style.setProperty("--palette", "#2B2D30");
+        canvas = t.canvas || "#1E1F22";
+        panel = t.panel || "#2B2D30";
+        fill = "#2B2D30";
+        stroke = "#DFE1E5";
+        label = "#DFE1E5";
+        palette = "#2B2D30";
+        root.style.setProperty("--canvas", canvas);
+        root.style.setProperty("--shape-fill", fill);
+        root.style.setProperty("--icon", stroke);
+        root.style.setProperty("--flow", stroke);
+        root.style.setProperty("--label", label);
+        root.style.setProperty("--palette", palette);
         root.style.setProperty("--palette-fg", "#DFE1E5");
         root.style.setProperty("--palette-border", "#43454A");
         root.style.setProperty("--palette-hover", "#3C3F44");
+        root.style.setProperty("--token-sim-on-fill", "rgba(16,208,112,.12)");
+        root.style.setProperty("--token-sim-on-border", "rgba(16,208,112,.5)");
       } else {
-        root.style.setProperty("--canvas", "#ffffff");
-        root.style.setProperty("--shape-fill", "#ffffff");
-        root.style.setProperty("--icon", "#525252");
-        root.style.setProperty("--flow", "#525252");
-        root.style.setProperty("--label", "#161616");
-        root.style.setProperty("--palette", "#F7F8FA");
+        canvas = t.canvas || "#F7F8FA";
+        panel = t.panel || "#FFFFFF";
+        fill = "#FFFFFF";
+        stroke = "#1E1F22";
+        label = "#1E1F22";
+        palette = "#FFFFFF";
+        root.style.setProperty("--canvas", canvas);
+        root.style.setProperty("--shape-fill", fill);
+        root.style.setProperty("--icon", stroke);
+        root.style.setProperty("--flow", stroke);
+        root.style.setProperty("--label", label);
+        root.style.setProperty("--palette", palette);
         root.style.setProperty("--palette-fg", "#1E1F22");
         root.style.setProperty("--palette-border", "#D3D5DB");
         root.style.setProperty("--palette-hover", "#EBECF0");
+        root.style.setProperty("--token-sim-on-fill", "rgba(16,208,112,.12)");
+        root.style.setProperty("--token-sim-on-border", "rgba(16,208,112,.55)");
       }
+      if (t.bg) root.style.setProperty("--bg", t.bg);
+      else root.style.setProperty("--bg", panel);
+      try {
+        var renderer = modeler.get("bpmnRenderer");
+        if (renderer) {
+          renderer.defaultFillColor = fill;
+          renderer.defaultStrokeColor = stroke;
+          renderer.defaultLabelColor = label;
+        }
+      } catch (e) {}
+      try {
+        var registry = modeler.get("elementRegistry");
+        var gfxFactory = modeler.get("graphicsFactory");
+        var canvasSvc = modeler.get("canvas");
+        var rootEl = canvasSvc.getRootElement();
+        registry.forEach(function (el) {
+          if (!el || el === rootEl) return;
+          var gfx = registry.getGraphics(el);
+          if (!gfx) return;
+          var type = el.waypoints ? "connection" : "shape";
+          try { gfxFactory.update(type, el, gfx); } catch (err) {}
+        });
+      } catch (e) {}
     };
     (function setupPropsToggle() {
       var app = document.getElementById("app");
