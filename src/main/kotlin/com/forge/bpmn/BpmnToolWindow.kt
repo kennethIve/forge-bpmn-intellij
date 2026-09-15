@@ -11,6 +11,9 @@ import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
+import com.intellij.openapi.ui.Messages
+import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
@@ -22,17 +25,23 @@ import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.ColoredTreeCellRenderer
 import com.intellij.ui.DoubleClickListener
 import com.intellij.ui.SimpleTextAttributes
+import com.intellij.ui.components.JBLabel
 import com.intellij.ui.content.ContentFactory
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.JBUI
+import com.intellij.util.ui.UIUtil
 import com.intellij.util.ui.tree.TreeUtil
 import java.awt.BorderLayout
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import java.awt.event.MouseEvent
+import javax.swing.Box
+import javax.swing.BoxLayout
+import javax.swing.JButton
 import javax.swing.JPanel
 import javax.swing.JScrollPane
 import javax.swing.JTree
+import javax.swing.SwingConstants
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 import javax.swing.tree.TreeSelectionModel
@@ -79,11 +88,32 @@ class BpmnExplorer(
     parent: Disposable,
 ) : JPanel(BorderLayout()) {
     private val tree = Tree()
+    private val treeScroll = JScrollPane(tree).apply { border = JBUI.Borders.empty() }
+    private val emptyPanel = JPanel().apply {
+        layout = BoxLayout(this, BoxLayout.Y_AXIS)
+        border = JBUI.Borders.empty(24)
+        background = UIUtil.getPanelBackground()
+        val title = JBLabel("No .bpmn files yet").apply {
+            alignmentX = CENTER_ALIGNMENT
+            horizontalAlignment = SwingConstants.CENTER
+            foreground = UIUtil.getContextHelpForeground()
+        }
+        val openExample = JButton("Open example: refund-request.bpmn").apply {
+            alignmentX = CENTER_ALIGNMENT
+            addActionListener { openExampleFile() }
+        }
+        add(Box.createVerticalGlue())
+        add(title)
+        add(Box.createVerticalStrut(12))
+        add(openExample)
+        add(Box.createVerticalGlue())
+    }
+    private val center = JPanel(BorderLayout())
 
     init {
         tree.isRootVisible = true
         tree.showsRootHandles = true
-        tree.emptyText.text = "No .bpmn files"
+        tree.emptyText.text = "No .bpmn files yet"
         tree.selectionModel.selectionMode = TreeSelectionModel.SINGLE_TREE_SELECTION
         tree.cellRenderer = object : ColoredTreeCellRenderer() {
             override fun customizeCellRenderer(
@@ -129,8 +159,9 @@ class BpmnExplorer(
         )
         toolbar.targetComponent = this
 
+        center.add(treeScroll, BorderLayout.CENTER)
         add(toolbar.component, BorderLayout.NORTH)
-        add(JScrollPane(tree).apply { border = JBUI.Borders.empty() }, BorderLayout.CENTER)
+        add(center, BorderLayout.CENTER)
 
         project.messageBus.connect(parent).subscribe(
             VirtualFileManager.VFS_CHANGES,
@@ -141,6 +172,60 @@ class BpmnExplorer(
             },
         )
         reload()
+    }
+
+    private fun showEmpty(empty: Boolean) {
+        center.removeAll()
+        center.add(if (empty) emptyPanel else treeScroll, BorderLayout.CENTER)
+        center.revalidate()
+        center.repaint()
+    }
+
+    private fun openExampleFile() {
+        val file = resolveExampleFile() ?: materializeBundledExample()
+        if (file == null) {
+            Messages.showWarningDialog(
+                project,
+                "Could not find or create examples/refund-request.bpmn.",
+                "BPMN",
+            )
+            return
+        }
+        FileEditorManager.getInstance(project).openFile(file, true)
+        reload()
+    }
+
+    private fun resolveExampleFile(): VirtualFile? {
+        val base = project.guessProjectDir()
+        val candidates = mutableListOf<String>()
+        if (base != null) {
+            candidates += listOf(
+                "${base.path}/examples/refund-request.bpmn",
+                "${base.path}/refund-request.bpmn",
+            )
+        }
+        candidates += "/workspace/forge-bpmn-intellij/examples/refund-request.bpmn"
+        val lfs = LocalFileSystem.getInstance()
+        for (path in candidates) {
+            val vf = lfs.refreshAndFindFileByPath(path)
+            if (vf != null && vf.exists()) return vf
+        }
+        return collectBpmnFiles().firstOrNull { it.name.equals("refund-request.bpmn", ignoreCase = true) }
+    }
+
+    /** Copy bundled sample into the project so Marketplace installs still get a CTA. */
+    private fun materializeBundledExample(): VirtualFile? {
+        val base = project.guessProjectDir() ?: return null
+        val stream = javaClass.getResourceAsStream("/examples/refund-request.bpmn") ?: return null
+        return ApplicationManager.getApplication().runWriteAction<VirtualFile?> {
+            val examplesDir = base.findChild("examples")
+                ?: base.createChildDirectory(this, "examples")
+            val existing = examplesDir.findChild("refund-request.bpmn")
+            if (existing != null) return@runWriteAction existing
+            val created = examplesDir.createChildData(this, "refund-request.bpmn")
+            stream.use { VfsUtil.saveText(created, it.reader().readText()) }
+            created
+        }
     }
 
     private fun openSelected() {
@@ -159,6 +244,7 @@ class BpmnExplorer(
                 if (project.isDisposed) return@invokeLater
                 tree.model = DefaultTreeModel(root)
                 TreeUtil.expandAll(tree)
+                showEmpty(files.isEmpty())
             }
         }
     }
@@ -181,7 +267,6 @@ class BpmnExplorer(
     private fun buildTree(files: List<VirtualFile>): DefaultMutableTreeNode {
         val root = DefaultMutableTreeNode(BpmnNode(project.name, null, BpmnNode.Kind.ROOT))
         if (files.isEmpty()) {
-            root.add(DefaultMutableTreeNode(BpmnNode("No .bpmn files", null, BpmnNode.Kind.EMPTY)))
             return root
         }
         val dirs = mutableMapOf("" to root)
