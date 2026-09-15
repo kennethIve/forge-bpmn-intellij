@@ -98,14 +98,22 @@ class BpmnExplorer(
             horizontalAlignment = SwingConstants.CENTER
             foreground = UIUtil.getContextHelpForeground()
         }
-        val openExample = JButton("Open example: refund-request.bpmn").apply {
+        val openExample = JButton("Open example").apply {
             alignmentX = CENTER_ALIGNMENT
             addActionListener { openExampleFile() }
+        }
+        val hint = JBLabel("Opens refund-request.bpmn").apply {
+            alignmentX = CENTER_ALIGNMENT
+            horizontalAlignment = SwingConstants.CENTER
+            foreground = UIUtil.getContextHelpForeground()
+            font = JBUI.Fonts.smallFont()
         }
         add(Box.createVerticalGlue())
         add(title)
         add(Box.createVerticalStrut(12))
         add(openExample)
+        add(Box.createVerticalStrut(8))
+        add(hint)
         add(Box.createVerticalGlue())
     }
     private val center = JPanel(BorderLayout())
