@@ -202,11 +202,12 @@
       color: #DFE1E5 !important;
       border: none !important;
     }
-    /* Pressed */
+    /* Pressed (:active): library rarely toggles .active on pads — use active gray so ladder is visible.
+       Same as .active (#D3D5DB / #5A5D61); drop unreachable deeper #C9CCD1 / #65696E on pads. */
     .bts-context-pad:not(.disabled):active,
     .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):active {
-      background: #C9CCD1 !important;
-      background-color: #C9CCD1 !important;
+      background: #D3D5DB !important;
+      background-color: #D3D5DB !important;
       color: #1E1F22 !important;
       opacity: 1 !important;
       border: none !important;
@@ -214,8 +215,8 @@
     }
     html.dark .bts-context-pad:not(.disabled):active,
     html.dark .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):active {
-      background: #65696E !important;
-      background-color: #65696E !important;
+      background: #5A5D61 !important;
+      background-color: #5A5D61 !important;
       color: #DFE1E5 !important;
       border: none !important;
     }
