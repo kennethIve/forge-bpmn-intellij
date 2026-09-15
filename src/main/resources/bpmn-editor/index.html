@@ -159,13 +159,10 @@
     .djs-overlays.hover .bts-context-pad:not(.disabled) {
       opacity: 1 !important;
     }
-    /* Active / startable (sim ON): gray chip fill — never green/blue rim */
+    /* Active (.active class): gray chip fill — never green/blue rim; idle stays base while sim ON */
     .bts-context-pad.active,
     .bts-context-pad:not(.disabled).active,
-    .djs-overlay-bts-context-menu .bts-context-pad.active,
-    .bjs-container.simulation .bts-context-pad:not(.disabled):not(.show-hover),
-    .bjs-container.simulation .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):not(.show-hover),
-    #app.simulating .bts-context-pad:not(.disabled):not(.show-hover) {
+    .djs-overlay-bts-context-menu .bts-context-pad.active {
       background: #D3D5DB !important;
       background-color: #D3D5DB !important;
       color: #1E1F22 !important;
@@ -175,34 +172,19 @@
     }
     html.dark .bts-context-pad.active,
     html.dark .bts-context-pad:not(.disabled).active,
-    html.dark .djs-overlay-bts-context-menu .bts-context-pad.active,
-    html.dark .bjs-container.simulation .bts-context-pad:not(.disabled):not(.show-hover),
-    html.dark .bjs-container.simulation .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):not(.show-hover),
-    html.dark #app.simulating .bts-context-pad:not(.disabled):not(.show-hover) {
+    html.dark .djs-overlay-bts-context-menu .bts-context-pad.active {
       background: #5A5D61 !important;
       background-color: #5A5D61 !important;
       color: #DFE1E5 !important;
       border: none !important;
     }
-    /* Hover / focus-visible: beats startable specificity */
+    /* Hover / focus-visible */
     .bts-context-pad:not(.disabled):hover,
     .bts-context-pad:not(.disabled):focus-visible,
     .bts-context-pad:hover,
     .bts-context-pad:focus-visible,
     .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):hover,
-    .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):focus-visible,
-    .bjs-container.simulation .bts-context-pad:not(.disabled):hover,
-    .bjs-container.simulation .bts-context-pad:not(.disabled):focus-visible,
-    .bjs-container.simulation .bts-context-pad:not(.disabled):not(.show-hover):hover,
-    .bjs-container.simulation .bts-context-pad:not(.disabled):not(.show-hover):focus-visible,
-    .bjs-container.simulation .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):hover,
-    .bjs-container.simulation .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):focus-visible,
-    .bjs-container.simulation .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):not(.show-hover):hover,
-    .bjs-container.simulation .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):not(.show-hover):focus-visible,
-    #app.simulating .bts-context-pad:not(.disabled):hover,
-    #app.simulating .bts-context-pad:not(.disabled):focus-visible,
-    #app.simulating .bts-context-pad:not(.disabled):not(.show-hover):hover,
-    #app.simulating .bts-context-pad:not(.disabled):not(.show-hover):focus-visible {
+    .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):focus-visible {
       opacity: 1 !important;
       background: #DFE1E5 !important;
       background-color: #DFE1E5 !important;
@@ -214,19 +196,7 @@
     html.dark .bts-context-pad:hover,
     html.dark .bts-context-pad:focus-visible,
     html.dark .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):hover,
-    html.dark .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):focus-visible,
-    html.dark .bjs-container.simulation .bts-context-pad:not(.disabled):hover,
-    html.dark .bjs-container.simulation .bts-context-pad:not(.disabled):focus-visible,
-    html.dark .bjs-container.simulation .bts-context-pad:not(.disabled):not(.show-hover):hover,
-    html.dark .bjs-container.simulation .bts-context-pad:not(.disabled):not(.show-hover):focus-visible,
-    html.dark .bjs-container.simulation .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):hover,
-    html.dark .bjs-container.simulation .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):focus-visible,
-    html.dark .bjs-container.simulation .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):not(.show-hover):hover,
-    html.dark .bjs-container.simulation .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):not(.show-hover):focus-visible,
-    html.dark #app.simulating .bts-context-pad:not(.disabled):hover,
-    html.dark #app.simulating .bts-context-pad:not(.disabled):focus-visible,
-    html.dark #app.simulating .bts-context-pad:not(.disabled):not(.show-hover):hover,
-    html.dark #app.simulating .bts-context-pad:not(.disabled):not(.show-hover):focus-visible {
+    html.dark .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):focus-visible {
       background: #4E5154 !important;
       background-color: #4E5154 !important;
       color: #DFE1E5 !important;
@@ -234,13 +204,7 @@
     }
     /* Pressed */
     .bts-context-pad:not(.disabled):active,
-    .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):active,
-    .bjs-container.simulation .bts-context-pad:not(.disabled):active,
-    .bjs-container.simulation .bts-context-pad:not(.disabled):not(.show-hover):active,
-    .bjs-container.simulation .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):active,
-    .bjs-container.simulation .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):not(.show-hover):active,
-    #app.simulating .bts-context-pad:not(.disabled):active,
-    #app.simulating .bts-context-pad:not(.disabled):not(.show-hover):active {
+    .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):active {
       background: #C9CCD1 !important;
       background-color: #C9CCD1 !important;
       color: #1E1F22 !important;
@@ -249,13 +213,7 @@
       box-shadow: none !important;
     }
     html.dark .bts-context-pad:not(.disabled):active,
-    html.dark .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):active,
-    html.dark .bjs-container.simulation .bts-context-pad:not(.disabled):active,
-    html.dark .bjs-container.simulation .bts-context-pad:not(.disabled):not(.show-hover):active,
-    html.dark .bjs-container.simulation .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):active,
-    html.dark .bjs-container.simulation .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):not(.show-hover):active,
-    html.dark #app.simulating .bts-context-pad:not(.disabled):active,
-    html.dark #app.simulating .bts-context-pad:not(.disabled):not(.show-hover):active {
+    html.dark .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):active {
       background: #65696E !important;
       background-color: #65696E !important;
       color: #DFE1E5 !important;
