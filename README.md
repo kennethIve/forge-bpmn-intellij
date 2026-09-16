@@ -48,5 +48,5 @@ See **[MARKETPLACE.md](MARKETPLACE.md)**. Short path:
 | --- | --- |
 | Id | `com.forge.bpmn` |
 | Vendor | Forge |
-| Version | 0.4.0 |
+| Version | 0.4.2 |
 | Folder | `forge-bpmn/` |

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2]
+
+- Tool window factory is Java so Plugin Verifier no longer reports Kotlin 2.2+ default-method bridges onto deprecated `isApplicable` / `isDoNotActivateOnStart` and experimental `getAnchor` / `getIcon` / `manage`
+- Stripe icon, anchor, and doNotActivateOnStart stay declarative in plugin.xml (stable replacements)
+- VFS/document writes use `WriteAction.compute` / `WriteAction.run` instead of `Application.runWriteAction`
+- Explorer background scan uses `AppExecutorUtil.getAppExecutorService()`; UI refresh is cancelled with `project.disposed`
+
 ## [0.4.1]
 
 - Install on IntelliJ IDEA 2025.3 Community: JCEF is an optional dependency (`com.intellij.modules.jcef` is not a plugin on 2025.3)

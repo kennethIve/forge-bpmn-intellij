@@ -8,7 +8,6 @@ import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.fileEditor.FileEditorManager
-import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
@@ -20,16 +19,14 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
-import com.intellij.openapi.wm.ToolWindow
-import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.ColoredTreeCellRenderer
 import com.intellij.ui.JBColor
 import com.intellij.ui.DoubleClickListener
 import com.intellij.ui.SimpleTextAttributes
 import com.intellij.ui.components.JBLabel
-import com.intellij.ui.content.ContentFactory
 import com.intellij.ui.treeStructure.Tree
+import com.intellij.util.concurrency.AppExecutorUtil
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.tree.TreeUtil
 import java.awt.BorderLayout
@@ -47,24 +44,6 @@ import javax.swing.SwingConstants
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 import javax.swing.tree.TreeSelectionModel
-
-class BpmnToolWindowFactory : ToolWindowFactory, DumbAware {
-    override fun shouldBeAvailable(project: Project): Boolean = true
-
-    override fun init(toolWindow: ToolWindow) {
-        toolWindow.setToHideOnEmptyContent(false)
-        toolWindow.isAvailable = true
-        toolWindow.setIcon(BpmnIcons.FILE)
-    }
-
-    override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-        val explorer = BpmnExplorer(project, toolWindow.disposable)
-        val content = ContentFactory.getInstance().createContent(explorer, "", false)
-        content.isCloseable = false
-        toolWindow.contentManager.addContent(content)
-        toolWindow.isAvailable = true
-    }
-}
 
 class ActivateBpmnToolWindowAction : DumbAwareAction() {
     override fun actionPerformed(e: AnActionEvent) {
@@ -244,15 +223,17 @@ class BpmnExplorer(
     }
 
     private fun reload() {
-        ApplicationManager.getApplication().executeOnPooledThread {
+        AppExecutorUtil.getAppExecutorService().execute {
             val files = collectBpmnFiles()
             val root = buildTree(files)
-            ApplicationManager.getApplication().invokeLater {
-                if (project.isDisposed) return@invokeLater
-                tree.model = DefaultTreeModel(root)
-                TreeUtil.expandAll(tree)
-                showEmpty(files.isEmpty())
-            }
+            ApplicationManager.getApplication().invokeLater(
+                {
+                    tree.model = DefaultTreeModel(root)
+                    TreeUtil.expandAll(tree)
+                    showEmpty(files.isEmpty())
+                },
+                project.disposed,
+            )
         }
     }
 
