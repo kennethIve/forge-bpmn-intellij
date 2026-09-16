@@ -2,6 +2,7 @@ package com.forge.bpmn
 
 import com.intellij.ide.ui.LafManagerListener
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.command.CommandProcessor
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.editor.event.DocumentEvent
@@ -126,11 +127,10 @@ class BpmnFileEditor(
         try {
             val manager = FileDocumentManager.getInstance()
             val doc = manager.getDocument(file)
-            val app = ApplicationManager.getApplication()
             if (doc != null) {
                 if (doc.text != xml) {
                     CommandProcessor.getInstance().runUndoTransparentAction {
-                        app.runWriteAction { doc.setText(xml) }
+                        WriteAction.run<RuntimeException> { doc.setText(xml) }
                     }
                 }
                 if (manager.isFileModified(file)) {
@@ -139,7 +139,7 @@ class BpmnFileEditor(
             } else {
                 val bytes = xml.toByteArray(Charsets.UTF_8)
                 if (!file.contentsToByteArray().contentEquals(bytes)) {
-                    app.runWriteAction { file.setBinaryContent(bytes) }
+                    WriteAction.run<RuntimeException> { file.setBinaryContent(bytes) }
                 }
             }
         } finally {
