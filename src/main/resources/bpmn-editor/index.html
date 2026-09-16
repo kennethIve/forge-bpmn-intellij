@@ -38,8 +38,14 @@
     marker path, marker polygon { fill: var(--icon) !important; stroke: var(--icon) !important; }
     .djs-element[data-element-id$="_label"] text,
     .djs-element[data-element-id$="_label"] .djs-label,
-    .djs-label, .djs-label text { fill: var(--label) !important; }
-    .djs-shape .djs-visual > :first-child { fill: var(--shape-fill) !important; stroke: var(--icon) !important; }
+    .djs-label, .djs-label text {
+      fill: var(--label) !important;
+      stroke: none !important;
+      font-family: Arial, Helvetica, sans-serif !important;
+      font-weight: 400 !important;
+    }
+    .djs-shape:not([data-element-id$="_label"]) .djs-visual > :first-child { fill: var(--shape-fill) !important; stroke: var(--icon) !important; }
+    .djs-element[data-element-id$="_label"] .djs-visual > :not(text) { fill: none !important; stroke: none !important; }
     .bjs-container .djs-palette { top: 60px !important; }
     .bts-toggle-mode {
       display: inline-flex !important;
