@@ -88,7 +88,7 @@ class BpmnFileEditor(
                     }
                 }
             }, b.cefBrowser)
-            FileDocumentManager.getInstance().getDocument(file)?.addDocumentListener(documentListener)
+            FileDocumentManager.getInstance().getDocument(file)?.addDocumentListener(documentListener, this)
             b.loadURL(BpmnAssets.root.resolve("index.html").toUri().toString())
             panel.add(b.component, BorderLayout.CENTER)
             panel.addComponentListener(object : ComponentAdapter() {
@@ -251,7 +251,6 @@ class BpmnFileEditor(
     override fun getFile(): VirtualFile = file
     override fun dispose() {
         themeConnection.disconnect()
-        FileDocumentManager.getInstance().getDocument(file)?.removeDocumentListener(documentListener)
         browser?.let { Disposer.dispose(it) }
     }
 

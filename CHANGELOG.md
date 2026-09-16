@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.1]
+
+- Install on IntelliJ IDEA 2025.3 Community: JCEF is an optional dependency (`com.intellij.modules.jcef` is not a plugin on 2025.3)
+- since-build 253, compile against 2025.3 / Java 21
+- Document listener uses a parent Disposable (no deprecated addDocumentListener overload)
+
 ## [0.4.0]
 
 - Develop against Java 25 / IntelliJ IDEA 2026.2 (since-build 262)
