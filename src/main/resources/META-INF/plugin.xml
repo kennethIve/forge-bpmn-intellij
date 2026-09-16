@@ -2,7 +2,7 @@
 <idea-plugin>
   <id>com.forge.bpmn</id>
   <name>Forge BPMN</name>
-  <version>0.4.0</version>
+  <version>0.4.1</version>
   <vendor email="kenneth96@outlook.com" url="https://github.com/kennethIve/forge-bpmn-intellij">Forge</vendor>
 
   <description><![CDATA[
@@ -18,7 +18,7 @@
 
   <change-notes><![CDATA[
     <ul>
-      <li>Built with Java 25 against IntelliJ IDEA 2026.2.</li>
+      <li>0.4.1: Install on IntelliJ IDEA 2025.3 Community — JCEF is optional; since-build 253.</li>
       <li>Native BPMN / XML editor tabs, with round-trip sync.</li>
       <li>Camunda Modeler-style diagram editor, properties panel, and BPMN syntax lint.</li>
     </ul>
@@ -27,7 +27,7 @@
   <depends>com.intellij.modules.platform</depends>
   <depends>com.intellij.modules.lang</depends>
   <depends>com.intellij.modules.xml</depends>
-  <depends>com.intellij.modules.jcef</depends>
+  <depends optional="true">com.intellij.modules.jcef</depends>
 
   <extensions defaultExtensionNs="com.intellij">
     <fileType name="BPMN"
@@ -41,6 +41,7 @@
                 anchor="left"
                 secondary="false"
                 canCloseContents="false"
+                doNotActivateOnStart="true"
                 icon="/META-INF/bpmnFileIcon.svg"
                 factoryClass="com.forge.bpmn.BpmnToolWindowFactory"/>
     <annotator language="XML" implementationClass="com.forge.bpmn.BpmnAnnotator"/>
