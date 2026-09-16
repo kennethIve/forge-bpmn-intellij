@@ -6,6 +6,7 @@
 - Stripe icon, anchor, and doNotActivateOnStart stay declarative in plugin.xml (stable replacements)
 - VFS/document writes use `WriteAction.compute` / `WriteAction.run` instead of `Application.runWriteAction`
 - Explorer background scan uses `AppExecutorUtil.getAppExecutorService()`; UI refresh is cancelled with `project.disposed`
+- Element names are plain Camunda text (no filled label chip)
 
 ## [0.4.1]
 
