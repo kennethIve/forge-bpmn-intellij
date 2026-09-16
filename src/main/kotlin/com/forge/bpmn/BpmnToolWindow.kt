@@ -6,6 +6,7 @@ import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.DumbAwareAction
@@ -23,13 +24,13 @@ import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.ColoredTreeCellRenderer
+import com.intellij.ui.JBColor
 import com.intellij.ui.DoubleClickListener
 import com.intellij.ui.SimpleTextAttributes
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.content.ContentFactory
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.JBUI
-import com.intellij.util.ui.UIUtil
 import com.intellij.util.ui.tree.TreeUtil
 import java.awt.BorderLayout
 import java.awt.event.KeyAdapter
@@ -38,6 +39,7 @@ import java.awt.event.MouseEvent
 import javax.swing.Box
 import javax.swing.BoxLayout
 import javax.swing.JButton
+import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.JScrollPane
 import javax.swing.JTree
@@ -52,8 +54,6 @@ class BpmnToolWindowFactory : ToolWindowFactory, DumbAware {
     override fun init(toolWindow: ToolWindow) {
         toolWindow.setToHideOnEmptyContent(false)
         toolWindow.isAvailable = true
-        toolWindow.isShowStripeButton = true
-        toolWindow.stripeTitle = "BPMN"
         toolWindow.setIcon(BpmnIcons.FILE)
     }
 
@@ -63,7 +63,6 @@ class BpmnToolWindowFactory : ToolWindowFactory, DumbAware {
         content.isCloseable = false
         toolWindow.contentManager.addContent(content)
         toolWindow.isAvailable = true
-        toolWindow.isShowStripeButton = true
     }
 }
 
@@ -92,11 +91,11 @@ class BpmnExplorer(
     private val emptyPanel = JPanel().apply {
         layout = BoxLayout(this, BoxLayout.Y_AXIS)
         border = JBUI.Borders.empty(24)
-        background = UIUtil.getPanelBackground()
+        background = JBColor.PanelBackground
         val title = JBLabel("No .bpmn files yet").apply {
             alignmentX = CENTER_ALIGNMENT
             horizontalAlignment = SwingConstants.CENTER
-            foreground = UIUtil.getContextHelpForeground()
+            foreground = JBColor.namedColor("Label.infoForeground", JBColor.GRAY)
         }
         val openExample = JButton("Open example").apply {
             alignmentX = CENTER_ALIGNMENT
@@ -105,7 +104,7 @@ class BpmnExplorer(
         val hint = JBLabel("Opens refund-request.bpmn").apply {
             alignmentX = CENTER_ALIGNMENT
             horizontalAlignment = SwingConstants.CENTER
-            foreground = UIUtil.getContextHelpForeground()
+            foreground = JBColor.namedColor("Label.infoForeground", JBColor.GRAY)
             font = JBUI.Fonts.smallFont()
         }
         add(Box.createVerticalGlue())
@@ -168,7 +167,7 @@ class BpmnExplorer(
         toolbar.targetComponent = this
 
         center.add(treeScroll, BorderLayout.CENTER)
-        add(toolbar.component, BorderLayout.NORTH)
+        add(toolbar as JComponent, BorderLayout.NORTH)
         add(center, BorderLayout.CENTER)
 
         project.messageBus.connect(parent).subscribe(
@@ -225,11 +224,11 @@ class BpmnExplorer(
     private fun materializeBundledExample(): VirtualFile? {
         val base = project.guessProjectDir() ?: return null
         val stream = javaClass.getResourceAsStream("/examples/refund-request.bpmn") ?: return null
-        return ApplicationManager.getApplication().runWriteAction<VirtualFile?> {
+        return WriteAction.compute<VirtualFile?, RuntimeException> {
             val examplesDir = base.findChild("examples")
                 ?: base.createChildDirectory(this, "examples")
             val existing = examplesDir.findChild("refund-request.bpmn")
-            if (existing != null) return@runWriteAction existing
+            if (existing != null) return@compute existing
             val created = examplesDir.createChildData(this, "refund-request.bpmn")
             stream.use { VfsUtil.saveText(created, it.reader().readText()) }
             created
