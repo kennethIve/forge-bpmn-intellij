@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.1]
+
+- Migrate deprecated/obsolete IntelliJ platform API usages for Marketplace compatibility
+- Use `WriteAction.run` / `WriteAction.compute` instead of `Application.runWriteAction`
+- Register document listeners with a `Disposable` parent
+- Replace `UIUtil` panel/help colors with `JBColor`
+- Drop redundant ToolWindow stripe title/button overrides (plugin.xml already defines them)
+
 ## [0.4.0]
 
 - Develop against Java 25 / IntelliJ IDEA 2026.2 (since-build 262)
