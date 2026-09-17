@@ -50,3 +50,9 @@ See **[MARKETPLACE.md](MARKETPLACE.md)**. Short path:
 | Vendor | Forge |
 | Version | 0.4.0 |
 | Folder | `forge-bpmn/` |
+
+## Project site
+
+Feature / usage landing page: [`site/`](site/) (GitHub Pages via `.github/workflows/pages.yml`).
+Not packaged into the plugin zip.
+

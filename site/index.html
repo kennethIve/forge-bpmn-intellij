@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Forge BPMN — BPMN editor for IntelliJ IDEA</title>
+  <meta name="description" content="Edit BPMN 2.0 diagrams inside IntelliJ IDEA: Camunda-style canvas, XML round-trip, Token Simulation, and Explorer." />
+  <link rel="icon" href="assets/pluginIcon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="nav">
+      <a class="brand" href="./">
+        <img src="assets/pluginIcon.svg" alt="" width="36" height="36" />
+        <span>Forge BPMN</span>
+      </a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="#features">Features</a>
+        <a href="#usage">Usage</a>
+        <a href="#install">Install</a>
+        <a href="https://github.com/kennethIve/forge-bpmn-intellij">GitHub</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <h1>BPMN editing inside IntelliJ IDEA</h1>
+      <p class="lede">
+        Open <code>.bpmn</code> files in a Camunda Modeler–style canvas with properties,
+        XML round-trip, Token Simulation, and a dedicated Explorer — aligned with the New UI.
+      </p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="https://plugins.jetbrains.com/">Get on JetBrains Marketplace</a>
+        <a class="btn btn-ghost" href="https://github.com/kennethIve/forge-bpmn-intellij">View source</a>
+      </div>
+      <p class="meta">Plugin id <code>com.forge.bpmn</code> · IntelliJ IDEA 2026.2+ · Java 25</p>
+    </section>
+
+    <section id="features">
+      <h2>Features</h2>
+      <div class="grid">
+        <article class="card">
+          <h3>Diagram canvas</h3>
+          <p>Camunda Cloud bpmn-js modeler with palette, context pad, and properties panel.</p>
+        </article>
+        <article class="card">
+          <h3>BPMN ↔ XML tabs</h3>
+          <p>Native editor tabs with automatic round-trip sync through the IntelliJ document.</p>
+        </article>
+        <article class="card">
+          <h3>Token Simulation</h3>
+          <p>Quiet New UI gray chips for play / route selection — no loud green pads.</p>
+        </article>
+        <article class="card">
+          <h3>Theme sync</h3>
+          <p>Light and Dark follow the IDE, including canvas and chrome tokens.</p>
+        </article>
+        <article class="card">
+          <h3>BPMN Explorer</h3>
+          <p>Tool window lists project <code>.bpmn</code> files with an Open example empty state.</p>
+        </article>
+        <article class="card">
+          <h3>Syntax lint</h3>
+          <p>Annotator + inspection for well-formed XML, events, duplicate ids, and more.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="screens">
+      <h2>In the IDE</h2>
+      <div class="shots">
+        <figure class="shot">
+          <img src="assets/01-editor-token-sim.png" alt="BPMN editor with Token Simulation gray chips" width="1280" height="720" loading="lazy" />
+          <figcaption>Editor + Token Simulation — gray play chips, New UI chrome</figcaption>
+        </figure>
+        <figure class="shot">
+          <img src="assets/02-gateway-pads.png" alt="Gateway Token Simulation pads side by side" width="1280" height="720" loading="lazy" />
+          <figcaption>Gateway pads — Trigger Event and Set Sequence Flow without overlap</figcaption>
+        </figure>
+        <figure class="shot">
+          <img src="assets/03-explorer-empty.png" alt="BPMN Explorer empty state with Open example" width="640" height="480" loading="lazy" />
+          <figcaption>Explorer empty state — Open example loads refund-request.bpmn</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="usage">
+      <h2>Usage</h2>
+      <div class="steps">
+        <div class="step">
+          <strong>Open a diagram</strong>
+          <p>Double-click any <code>.bpmn</code> file, or use the <strong>BPMN</strong> tool window to browse and open.</p>
+        </div>
+        <div class="step">
+          <strong>Edit on canvas or XML</strong>
+          <p>Use the <strong>BPMN</strong> tab for the modeler, or <strong>XML</strong> for the source. Edits sync both ways.</p>
+        </div>
+        <div class="step">
+          <strong>Simulate tokens</strong>
+          <p>Turn on Token Simulation from the editor toolbar. Use the gray chips to start, pause, and choose gateway routes.</p>
+        </div>
+        <div class="step">
+          <strong>Empty project?</strong>
+          <p>In the BPMN Explorer empty state, click <strong>Open example</strong> to materialize <code>examples/refund-request.bpmn</code>.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="install">
+      <h2>Install</h2>
+      <div class="grid">
+        <article class="card">
+          <h3>Marketplace</h3>
+          <p>Search <strong>Forge BPMN</strong> in Settings → Plugins, or install from the JetBrains Marketplace listing.</p>
+        </article>
+        <article class="card">
+          <h3>From GitHub zip</h3>
+          <p>Download a release zip → Settings → Plugins → ⚙️ → <strong>Install Plugin from Disk</strong>.</p>
+        </article>
+        <article class="card">
+          <h3>Develop</h3>
+          <p>Clone the repo, open in IntelliJ, run <strong>Run Plugin</strong>. See <a href="https://github.com/kennethIve/forge-bpmn-intellij/blob/main/INSTALL.md">INSTALL.md</a>.</p>
+        </article>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <span>© Forge · Forge</span>
+      <span>
+        <a href="https://github.com/kennethIve/forge-bpmn-intellij">GitHub</a>
+        ·
+        <a href="https://github.com/kennethIve/forge-bpmn-intellij/blob/main/LICENSE">License</a>
+      </span>
+    </footer>
+  </div>
+</body>
+</html>
