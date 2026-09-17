@@ -63,3 +63,23 @@ val fetchModelerAssets by tasks.registering(Exec::class) {
 tasks.matching { it.name.contains("prepareSandbox") || it.name == "buildPlugin" }.configureEach {
     dependsOn(fetchModelerAssets)
 }
+
+// GitHub Pages lives in site/ — never ship it inside the plugin zip.
+tasks.named("buildPlugin") {
+    doLast {
+        val zip = layout.buildDirectory.dir("distributions").get().asFile
+            .listFiles()
+            ?.firstOrNull { it.name.endsWith(".zip") }
+            ?: error("buildPlugin produced no zip")
+        val process = ProcessBuilder("unzip", "-Z1", zip.absolutePath)
+            .redirectErrorStream(true)
+            .start()
+        val listing = process.inputStream.bufferedReader().readText()
+        process.waitFor()
+        val leaked = listing.lineSequence().any {
+            it.startsWith("site/") || it.contains("/site/") || it.startsWith("docs/site/")
+        }
+        check(!leaked) { "GitHub Pages files from site/ must not be packaged into ${zip.name}" }
+    }
+}
+
