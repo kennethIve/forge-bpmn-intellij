@@ -211,7 +211,6 @@ class BpmnExplorer(
                 "${base.path}/refund-request.bpmn",
             )
         }
-        candidates += "/workspace/forge-bpmn-intellij/examples/refund-request.bpmn"
         val lfs = LocalFileSystem.getInstance()
         for (path in candidates) {
             val vf = lfs.refreshAndFindFileByPath(path)
