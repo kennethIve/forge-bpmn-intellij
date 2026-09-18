@@ -1,0 +1,142 @@
+:root {
+  --bg: #0f1115;
+  --panel: #1a1d24;
+  --card: #22262f;
+  --fg: #e8eaed;
+  --muted: #9aa0a6;
+  --border: #2e333d;
+  --accent: #3574f0;
+  --accent-soft: rgba(53, 116, 240, 0.14);
+  --radius: 14px;
+  --max: 1040px;
+  --font: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: var(--font);
+  background: radial-gradient(1200px 600px at 10% -10%, #1a2744 0%, transparent 55%),
+              radial-gradient(900px 500px at 100% 0%, #14201f 0%, transparent 50%),
+              var(--bg);
+  color: var(--fg);
+  line-height: 1.55;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+img { max-width: 100%; height: auto; display: block; border-radius: 10px; }
+
+.wrap { width: min(var(--max), calc(100% - 2rem)); margin: 0 auto; }
+
+.nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 0; gap: 1rem;
+}
+.brand { display: flex; align-items: center; gap: 0.75rem; color: var(--fg); font-weight: 650; }
+.brand img { width: 36px; height: 36px; border-radius: 9px; }
+.nav-links { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.95rem; }
+.nav-links a { color: var(--muted); text-decoration: none; }
+.nav-links a:hover { color: var(--fg); }
+
+.hero {
+  padding: 3rem 0 2.5rem;
+  display: grid;
+  gap: 1.5rem;
+}
+.hero h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+.hero .lede { margin: 0; max-width: 42rem; color: var(--muted); font-size: 1.1rem; }
+.cta-row { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0.7rem 1.1rem; border-radius: 10px; font-weight: 600; border: 1px solid transparent;
+  text-decoration: none;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { filter: brightness(1.08); text-decoration: none; }
+.btn-ghost { background: var(--accent-soft); color: var(--fg); border-color: var(--border); }
+.btn-ghost:hover { border-color: var(--accent); text-decoration: none; }
+.meta { color: var(--muted); font-size: 0.9rem; }
+
+section { padding: 2.25rem 0; }
+section h2 {
+  margin: 0 0 1rem;
+  font-size: 1.45rem;
+  letter-spacing: -0.02em;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.15rem;
+}
+.card h3 { margin: 0 0 0.4rem; font-size: 1.05rem; }
+.card p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+
+.shots {
+  display: grid;
+  gap: 1.25rem;
+}
+.shot {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.shot figcaption {
+  padding: 0.85rem 1rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+  border-top: 1px solid var(--border);
+}
+.shot img { border-radius: 0; }
+
+.steps { counter-reset: step; display: grid; gap: 0.85rem; }
+.step {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem 1rem 3.2rem;
+  position: relative;
+}
+.step::before {
+  counter-increment: step;
+  content: counter(step);
+  position: absolute; left: 1rem; top: 1rem;
+  width: 1.6rem; height: 1.6rem; border-radius: 999px;
+  background: var(--accent-soft); color: var(--accent);
+  display: grid; place-items: center; font-weight: 700; font-size: 0.85rem;
+}
+.step strong { display: block; margin-bottom: 0.25rem; }
+.step p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+code, kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.88em;
+  background: #12151b;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.1em 0.35em;
+}
+
+.footer {
+  border-top: 1px solid var(--border);
+  padding: 1.5rem 0 2.5rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; justify-content: space-between;
+}
+
+@media (max-width: 640px) {
+  .hero { padding-top: 1.5rem; }
+}
