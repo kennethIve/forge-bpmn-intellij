@@ -18,7 +18,7 @@
 
   <change-notes><![CDATA[
     <ul>
-      <li>0.4.2: Plugin Verifier — Java ToolWindowFactory; diagram names are plain text (no chip).</li>
+      <li>0.4.2: IntelliJ IDEA 2025.3 Community, Plugin Verifier pass, Camunda-style element names.</li>
       <li>0.4.1: Install on IntelliJ IDEA 2025.3 Community — JCEF is optional; since-build 253.</li>
       <li>Native BPMN / XML editor tabs, with round-trip sync.</li>
       <li>Camunda Modeler-style diagram editor, properties panel, and BPMN syntax lint.</li>

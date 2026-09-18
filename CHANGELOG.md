@@ -2,10 +2,11 @@
 
 ## [0.4.2]
 
-- Tool window factory is Java so Plugin Verifier no longer reports Kotlin 2.2+ default-method bridges onto deprecated `isApplicable` / `isDoNotActivateOnStart` and experimental `getAnchor` / `getIcon` / `manage`
-- Stripe icon, anchor, and doNotActivateOnStart stay declarative in plugin.xml (stable replacements)
-- VFS/document writes use `WriteAction.compute` / `WriteAction.run` instead of `Application.runWriteAction`
-- Explorer background scan uses `AppExecutorUtil.getAppExecutorService()`; UI refresh is cancelled with `project.disposed`
+- Install on IntelliJ IDEA 2025.3 Community and later (since-build 253, Java 21)
+- Plugin Verifier: Java `ToolWindowFactory` so Kotlin 2.2+ default-method bridges are not reported
+- Stripe icon, anchor, and doNotActivateOnStart stay declarative in plugin.xml
+- VFS/document writes use `WriteAction.compute` / `WriteAction.run`
+- Explorer background scan uses `AppExecutorUtil`; UI refresh is cancelled with `project.disposed`
 - Element names are plain Camunda text (no filled label chip)
 
 ## [0.4.1]
