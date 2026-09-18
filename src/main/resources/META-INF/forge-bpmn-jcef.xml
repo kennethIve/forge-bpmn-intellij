@@ -1,0 +1,8 @@
+<!-- Additional descriptor required by optional="true" on com.intellij.modules.jcef.
+     Loaded only when that module/plugin is present (2025.3.1+ / 2026.2+).
+     Keep this file empty of FileEditorProvider / toolWindow: 2025.3.0 Community
+     still has JCEF in the platform but does not expose the jcef module alias. -->
+<idea-plugin>
+  <extensions defaultExtensionNs="com.intellij">
+  </extensions>
+</idea-plugin>
