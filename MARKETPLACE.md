@@ -1,7 +1,7 @@
 # JetBrains Marketplace + GitHub Actions
 
 Plugin id: `com.forge.bpmn`  
-Version: `0.4.2`
+Version: `0.4.3`
 
 ## 1. Push to GitHub
 

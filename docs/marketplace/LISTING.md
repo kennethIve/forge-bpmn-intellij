@@ -2,7 +2,7 @@
 
 **Name:** Forge BPMN  
 **Vendor:** Forge  
-**Id:** `com.forge.bpmn` · v0.4.2
+**Id:** `com.forge.bpmn` · v0.4.3
 
 ## Short description (plugin.xml / Marketplace blurb)
 Edit BPMN 2.0 diagrams inside IntelliJ IDEA — canvas, properties, XML round-trip, and Token Simulation with New UI–aligned chrome.
