@@ -1,12 +1,19 @@
 # Changelog
 
+## [0.4.2]
+
+- Install on IntelliJ IDEA 2025.3 Community and later (since-build 253, Java 21)
+- Plugin Verifier: Java `ToolWindowFactory` so Kotlin 2.2+ default-method bridges are not reported
+- Stripe icon, anchor, and doNotActivateOnStart stay declarative in plugin.xml
+- VFS/document writes use `WriteAction.compute` / `WriteAction.run`
+- Explorer background scan uses `AppExecutorUtil`; UI refresh is cancelled with `project.disposed`
+- Element names are plain Camunda text (no filled label chip)
+
 ## [0.4.1]
 
-- Migrate deprecated/obsolete IntelliJ platform API usages for Marketplace compatibility
-- Use `WriteAction.run` / `WriteAction.compute` instead of `Application.runWriteAction`
-- Register document listeners with a `Disposable` parent
-- Replace `UIUtil` panel/help colors with `JBColor`
-- Drop redundant ToolWindow stripe title/button overrides (plugin.xml already defines them)
+- Install on IntelliJ IDEA 2025.3 Community: JCEF is an optional dependency (`com.intellij.modules.jcef` is not a plugin on 2025.3)
+- since-build 253, compile against 2025.3 / Java 21
+- Document listener uses a parent Disposable (no deprecated addDocumentListener overload)
 
 ## [0.4.0]
 

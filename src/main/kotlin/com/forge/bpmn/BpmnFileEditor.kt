@@ -89,7 +89,7 @@ class BpmnFileEditor(
                     }
                 }
             }, b.cefBrowser)
-            FileDocumentManager.getInstance().getDocument(file)?.addDocumentListener(documentListener, b)
+            FileDocumentManager.getInstance().getDocument(file)?.addDocumentListener(documentListener, this)
             b.loadURL(BpmnAssets.root.resolve("index.html").toUri().toString())
             panel.add(b.component, BorderLayout.CENTER)
             panel.addComponentListener(object : ComponentAdapter() {

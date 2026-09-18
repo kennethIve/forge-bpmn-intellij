@@ -1,7 +1,7 @@
 # Local development (Forge BPMN)
 
 Plugin id: `com.forge.bpmn`  
-IntelliJ IDEA 2026.2+ (build 262+). Java 25 (Gradle toolchain).
+IntelliJ IDEA 2025.3+ (build 253+). Java 21 (Gradle toolchain).
 
 Development happens on the **`dev`** branch. GitHub Actions **does not** build `dev` — only `main`.
 
@@ -18,7 +18,7 @@ git checkout dev
 ```
 
 2. IntelliJ: **File → Open** the folder that contains `build.gradle.kts` (project root).
-3. Trust the Gradle project. Wait until indexing finishes (first time downloads JDK 25 toolchain and the 2026.2 SDK).
+3. Trust the Gradle project. Wait until indexing finishes (first time downloads JDK 21 toolchain and the 2025.3 SDK).
 4. Top-right run configuration **Run Plugin** → green play (or Gradle task `runIde`).
 5. In the **new** IDE window, open `examples/refund-request.bpmn`.
 
