@@ -17,7 +17,7 @@ This ZIP already includes:
 1. Sign in at [JetBrains Marketplace](https://plugins.jetbrains.com/).
 2. Open [My Tokens](https://plugins.jetbrains.com/author/me/tokens) and create a token with upload permission.
 3. In the GitHub repo: **Settings → Secrets and variables → Actions** → New repository secret:
-   - `PUBLISH_TOKEN` = the Marketplace token
+   - `INTELLIJ_PERM_TOKEN` = the Marketplace token
 
 ## 3. Plugin signing keys (required)
 
@@ -33,9 +33,9 @@ Add three more GitHub secrets (paste **file contents**, not paths):
 
 | Secret | Value |
 | --- | --- |
-| `CERTIFICATE_CHAIN` | contents of `chain.crt` |
-| `PRIVATE_KEY` | contents of `private.pem` |
-| `PRIVATE_KEY_PASSWORD` | passphrase used with `genpkey` |
+| `CERTIFICATE_CHAIN` | signing certificate chain (PEM text) |
+| `PRIVATE_KEY` | signing private key (PEM text) |
+| `PRIVATE_KEY_PASSWORD` | key passphrase (if any) |
 
 Keep `private.pem` off git. See [Plugin Signing](https://plugins.jetbrains.com/docs/intellij/plugin-signing.html).
 
@@ -62,7 +62,7 @@ A `-eap` / `-alpha` / `-beta` suffix in the version publishes to that channel in
 
 ## Secrets checklist
 
-- [ ] `PUBLISH_TOKEN`
+- [ ] `INTELLIJ_PERM_TOKEN`
 - [ ] `CERTIFICATE_CHAIN`
 - [ ] `PRIVATE_KEY`
 - [ ] `PRIVATE_KEY_PASSWORD`

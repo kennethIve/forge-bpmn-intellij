@@ -38,7 +38,7 @@ Output: `build/distributions/`.
 See **[MARKETPLACE.md](MARKETPLACE.md)**. Short path:
 
 1. Push this project to GitHub.
-2. Add secrets: `PUBLISH_TOKEN`, `CERTIFICATE_CHAIN`, `PRIVATE_KEY`, `PRIVATE_KEY_PASSWORD`.
+2. Add Actions secrets for Marketplace publish (token + signing). See **MARKETPLACE.md**.
 3. Upload the **first** version by hand at [plugins.jetbrains.com/plugin/add](https://plugins.jetbrains.com/plugin/add) (`build/distributions/*.zip`).
 4. Later versions: GitHub → Releases → publish tag `v0.4.0`. The **Publish** workflow runs `gradle publishPlugin`.
 
