@@ -1,7 +1,7 @@
 # Forge BPMN — Marketplace listing (UX draft)
 
 **Name:** Forge BPMN  
-**Vendor:** Forge  
+**Vendor:** Forge · https://github.com/kennethIve/forge-bpmn-intellij  
 **Id:** `com.forge.bpmn` · v0.4.2
 
 ## Short description (plugin.xml / Marketplace blurb)
