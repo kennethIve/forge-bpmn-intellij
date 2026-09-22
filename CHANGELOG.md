@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.4.3]
+
+- Plugin Verifier: optional `com.intellij.modules.jcef` now declares `config-file="forge-bpmn-jcef.xml"`
+- Extra descriptor is empty on purpose — diagram editor stays in the main plugin.xml so 2025.3.0 Community still opens the canvas
+
 ## [0.4.2]
 
 - Install on IntelliJ IDEA 2025.3 Community and later (since-build 253, Java 21)
