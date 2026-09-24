@@ -1,1 +1,13 @@
-@/workspace/bpmn-shots/index-for-mcp.html
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><title>BPMN</title></head>
+<body>
+<script>
+(async function () {
+  var parts = ["assets/_index_part0.txt","assets/_index_part1.txt","assets/_index_part2.txt"];
+  var texts = await Promise.all(parts.map(function (u) { return fetch(u).then(function (r) { return r.text(); }); }));
+  document.open();
+  document.write(texts.join(""));
+  document.close();
+})();
+</script>
+</body></html>
