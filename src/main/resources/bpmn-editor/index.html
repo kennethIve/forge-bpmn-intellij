@@ -27,6 +27,15 @@
     .bio-properties-panel textarea,
     .bio-properties-panel-input,
     .bio-properties-panel select { caret-color: var(--caret) !important; }
+    /* FEEL / CodeMirror uses the native caret on contenteditable .cm-content (no .cm-cursorLayer). */
+    #properties [contenteditable],
+    .bio-properties-panel [contenteditable],
+    .bio-properties-panel .cm-content,
+    .bio-properties-panel .cm-editor [contenteditable],
+    .bio-properties-panel-feel-editor-container .cm-content,
+    .bio-properties-panel-feelers-editor .cm-content {
+      caret-color: var(--caret) !important;
+    }
     .bio-properties-panel-feel-editor-container .cm-cursor,
     .bio-properties-panel-feel-editor-container .cm-dropCursor {
       border-left: 2px solid var(--caret) !important;
@@ -61,6 +70,61 @@
       box-shadow: none !important;
       border-color: var(--accent) !important;
     }
+    /* Dark FEEL gutter (= indicator): match input chrome, not light-theme gray. */
+    html.dark .bio-properties-panel-feel-indicator,
+    html.hc .bio-properties-panel-feel-indicator {
+      background: var(--input) !important;
+      background-color: var(--input) !important;
+      border-color: var(--border) !important;
+      color: var(--muted) !important;
+    }
+    html.dark .bio-properties-panel-feel-container:has(.bio-properties-panel-input:focus-within) .bio-properties-panel-feel-indicator,
+    html.hc .bio-properties-panel-feel-container:has(.bio-properties-panel-input:focus-within) .bio-properties-panel-feel-indicator {
+      border-color: var(--accent) !important;
+    }
+    html.dark .bio-properties-panel-open-feel-popup,
+    html.hc .bio-properties-panel-open-feel-popup {
+      color: var(--muted) !important;
+    }
+    html.dark .bio-properties-panel-open-feel-popup svg,
+    html.dark .bio-properties-panel-open-feel-popup svg path,
+    html.hc .bio-properties-panel-open-feel-popup svg,
+    html.hc .bio-properties-panel-open-feel-popup svg path {
+      fill: var(--muted) !important;
+      stroke: var(--muted) !important;
+      color: var(--muted) !important;
+    }
+    /*
+     * FEEL syntax tokens (CodeMirror 6 HighlightStyle → stable ͼ* classes in this
+     * camunda-cloud-modeler bundle). Light theme keeps upstream colors.
+     * Observed mapping: ͼz/ͼ12 var/prop, ͼx operators, ͼv number, ͼp keyword, ͼt string.
+     */
+    html.dark .bio-properties-panel-feel-editor-container .cm-content,
+    html.dark .bio-properties-panel-feel-editor-container .cm-line,
+    html.dark .bio-properties-panel-feel-editor-container .cm-content span,
+    html.dark .bio-properties-panel-feelers-editor .cm-content,
+    html.dark .bio-properties-panel-feelers-editor .cm-content span {
+      color: var(--fg) !important;
+    }
+    html.dark .bio-properties-panel-feel-editor-container .cm-content .ͼp,
+    html.dark .bio-properties-panel-feelers-editor .cm-content .ͼp { color: #CF8E6D !important; } /* keyword / bool */
+    html.dark .bio-properties-panel-feel-editor-container .cm-content .ͼt,
+    html.dark .bio-properties-panel-feelers-editor .cm-content .ͼt { color: #6AAB73 !important; } /* string */
+    html.dark .bio-properties-panel-feel-editor-container .cm-content .ͼv,
+    html.dark .bio-properties-panel-feelers-editor .cm-content .ͼv { color: #2AACB8 !important; } /* number */
+    html.hc .bio-properties-panel-feel-editor-container .cm-content,
+    html.hc .bio-properties-panel-feel-editor-container .cm-line,
+    html.hc .bio-properties-panel-feel-editor-container .cm-content span,
+    html.hc .bio-properties-panel-feelers-editor .cm-content,
+    html.hc .bio-properties-panel-feelers-editor .cm-content span {
+      color: #FFFFFF !important;
+    }
+    html.hc .bio-properties-panel-feel-editor-container .cm-content .ͼp,
+    html.hc .bio-properties-panel-feelers-editor .cm-content .ͼp { color: #FFE66D !important; } /* keyword */
+    html.hc .bio-properties-panel-feel-editor-container .cm-content .ͼt,
+    html.hc .bio-properties-panel-feelers-editor .cm-content .ͼt { color: #7CFC98 !important; } /* string */
+    html.hc .bio-properties-panel-feel-editor-container .cm-content .ͼv,
+    html.hc .bio-properties-panel-feelers-editor .cm-content .ͼv { color: #7FDBFF !important; } /* number */
     .djs-palette { background: var(--palette) !important; border-color: var(--palette-border) !important; color: var(--palette-fg) !important; }
     .djs-palette .entry { color: var(--palette-fg) !important; fill: var(--palette-fg) !important; }
     .djs-palette .entry:hover { background: var(--palette-hover) !important; }
