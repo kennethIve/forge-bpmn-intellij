@@ -756,6 +756,159 @@
         });
       } catch (e) {}
     };
+    (function setupConnectionContextPad() {
+      var lastClick = null;
+      try {
+        var eventBus = modeler.get("eventBus");
+        var canvas = modeler.get("canvas");
+        var contextPad = modeler.get("contextPad");
+        if (!contextPad || typeof contextPad._getPosition !== "function") return;
+
+        function eventToDiagram(e) {
+          if (e && typeof e.x === "number" && typeof e.y === "number" && isFinite(e.x) && isFinite(e.y)) {
+            return { x: e.x, y: e.y };
+          }
+          var oe = e && (e.originalEvent || e);
+          if (!oe || typeof oe.clientX !== "number") return null;
+          var vb = canvas.viewbox();
+          var rect = canvas.getContainer().getBoundingClientRect();
+          return {
+            x: (oe.clientX - rect.left) / vb.scale + vb.x,
+            y: (oe.clientY - rect.top) / vb.scale + vb.y
+          };
+        }
+
+        function rememberClick(e) {
+          var el = e && e.element;
+          if (!el || !el.waypoints || !el.waypoints.length) return;
+          var pt = eventToDiagram(e);
+          if (!pt) return;
+          lastClick = { elementId: el.id, x: pt.x, y: pt.y };
+        }
+
+        eventBus.on("element.mousedown", rememberClick);
+        eventBus.on("element.click", rememberClick);
+
+        function nearestOnPolyline(waypoints, px, py) {
+          var best = null, bestDist = Infinity, bestSeg = null;
+          for (var i = 0; i < waypoints.length - 1; i++) {
+            var a = waypoints[i], b = waypoints[i + 1];
+            var dx = b.x - a.x, dy = b.y - a.y;
+            var len2 = dx * dx + dy * dy;
+            var t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((px - a.x) * dx + (py - a.y) * dy) / len2));
+            var qx = a.x + t * dx, qy = a.y + t * dy;
+            var d = (px - qx) * (px - qx) + (py - qy) * (py - qy);
+            if (d < bestDist) {
+              bestDist = d;
+              best = { x: qx, y: qy };
+              bestSeg = { dx: dx, dy: dy };
+            }
+          }
+          return { point: best, seg: bestSeg };
+        }
+
+        function longestSegmentMid(waypoints) {
+          var bestLen = -1, mid = null, seg = null;
+          for (var i = 0; i < waypoints.length - 1; i++) {
+            var a = waypoints[i], b = waypoints[i + 1];
+            var dx = b.x - a.x, dy = b.y - a.y;
+            var len = Math.hypot(dx, dy);
+            if (len > bestLen) {
+              bestLen = len;
+              mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+              seg = { dx: dx, dy: dy };
+            }
+          }
+          return { point: mid, seg: seg };
+        }
+
+        function labelCenter(target) {
+          var label = target.label || (target.labels && target.labels[0]);
+          if (!label) return null;
+          var x = label.x, y = label.y;
+          if (typeof x !== "number" || typeof y !== "number") return null;
+          var w = label.width || 0, h = label.height || 0;
+          return { x: x + w / 2, y: y + h / 2 };
+        }
+
+        function offsetFromLine(point, seg, target) {
+          var len = Math.hypot(seg.dx, seg.dy) || 1;
+          var nx = -seg.dy / len, ny = seg.dx / len;
+          var OFFSET = 16;
+          var c1 = { x: point.x + nx * OFFSET, y: point.y + ny * OFFSET };
+          var c2 = { x: point.x - nx * OFFSET, y: point.y - ny * OFFSET };
+          var label = labelCenter(target);
+          if (label) {
+            var d1 = (c1.x - label.x) * (c1.x - label.x) + (c1.y - label.y) * (c1.y - label.y);
+            var d2 = (c2.x - label.x) * (c2.x - label.x) + (c2.y - label.y) * (c2.y - label.y);
+            return d1 >= d2 ? c1 : c2;
+          }
+          // Prefer the visually upper side (smaller diagram Y).
+          return c1.y <= c2.y ? c1 : c2;
+        }
+
+        function computeDiagramAnchor(target) {
+          var waypoints = target.waypoints;
+          if (!waypoints || waypoints.length < 2) return null;
+          var hit = null;
+          if (lastClick && lastClick.elementId === target.id) {
+            hit = nearestOnPolyline(waypoints, lastClick.x, lastClick.y);
+          } else {
+            hit = longestSegmentMid(waypoints);
+          }
+          if (!hit || !hit.point || !hit.seg) return null;
+          return offsetFromLine(hit.point, hit.seg, target);
+        }
+
+        function clampPadPosition(left, top, html) {
+          var container = canvas.getContainer();
+          var cw = container.clientWidth || 0;
+          var ch = container.clientHeight || 0;
+          var pw = (html && html.offsetWidth) || 120;
+          var ph = (html && html.offsetHeight) || 40;
+          var M = 8;
+          if (cw > 0) left = Math.max(M, Math.min(Math.max(M, cw - pw - M), left));
+          if (ch > 0) top = Math.max(M, Math.min(Math.max(M, ch - ph - M), top));
+          return { left: left, top: top };
+        }
+
+        var originalGetPosition = contextPad._getPosition.bind(contextPad);
+        contextPad._getPosition = function (target) {
+          try {
+            if (!target || (typeof target === "object" && Array.isArray(target)) || !target.waypoints) {
+              return originalGetPosition(target);
+            }
+            var anchor = computeDiagramAnchor(target);
+            if (!anchor) return originalGetPosition(target);
+            var vb = canvas.viewbox();
+            var left = (anchor.x - vb.x) * vb.scale;
+            var top = (anchor.y - vb.y) * vb.scale;
+            var html = contextPad._current && contextPad._current.html;
+            return clampPadPosition(left, top, html);
+          } catch (err) {
+            return originalGetPosition(target);
+          }
+        };
+
+        // Keep pad next to the diagram-space anchor on zoom/scroll/resize.
+        eventBus.on("canvas.viewbox.changed", function () {
+          try {
+            if (contextPad.isOpen && contextPad.isOpen() && typeof contextPad._updatePosition === "function") {
+              contextPad._updatePosition();
+            }
+          } catch (e) {}
+        });
+        if (window.ResizeObserver) {
+          new ResizeObserver(function () {
+            try {
+              if (contextPad.isOpen && contextPad.isOpen() && typeof contextPad._updatePosition === "function") {
+                contextPad._updatePosition();
+              }
+            } catch (e) {}
+          }).observe(canvas.getContainer());
+        }
+      } catch (e) {}
+    })();
     (function setupPropsToggle() {
       var app = document.getElementById("app");
       var btn = document.getElementById("toggle-props");

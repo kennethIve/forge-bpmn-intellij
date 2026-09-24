@@ -3,6 +3,7 @@
 ## [0.4.4]
 
 - FEEL / condition expression editor: visible caret (theme-aware), selection tint, active-line tint, accent focus ring; High Contrast theme flag for caret
+- Context pad on connections opens near the click (or longest-segment midpoint), stays anchored through zoom/scroll
 
 ## [0.4.3]
 
