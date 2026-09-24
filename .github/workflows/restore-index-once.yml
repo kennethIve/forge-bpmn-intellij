@@ -14,45 +14,14 @@ jobs:
         with:
           ref: dev
           fetch-depth: 0
-      - name: Restore index.html from pre-break tip and apply focus-border fix
+      - name: Restore index.html and apply focus-border fix
+        env:
+          FIX_PY_B64: "ZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCnAgPSBQYXRoKCJzcmMvbWFpbi9yZXNvdXJjZXMvYnBtbi1lZGl0b3IvaW5kZXguaHRtbCIpCnQgPSBwLnJlYWRfdGV4dCgpCm9sZCA9ICIiIiAgICAuYmlvLXByb3BlcnRpZXMtcGFuZWwtZmVlbC1lZGl0b3ItY29udGFpbmVyOmZvY3VzLXdpdGhpbiwKICAgIC5iaW8tcHJvcGVydGllcy1wYW5lbC1mZWVsLWVkaXRvci1jb250YWluZXIuYWN0aXZlIHsKICAgICAgb3V0bGluZTogMXB4IHNvbGlkIHZhcigtLWFjY2VudCkgIWltcG9ydGFudDsKICAgICAgb3V0bGluZS1vZmZzZXQ6IDAgIWltcG9ydGFudDsKICAgICAgYm94LXNoYWRvdzogbm9uZSAhaW1wb3J0YW50OwogICAgICBib3JkZXItY29sb3I6IHZhcigtLWFjY2VudCkgIWltcG9ydGFudDsKICAgIH0KIiIiCmluc2VydCA9ICIiIiAgICAvKiBGb2N1czoga2VlcCBhIHNpbmdsZSAxcHggYm9yZGVyIChwYW5lbC1uYXRpdmUpOyByZWNvbG9yIHRvIGFjY2VudCwgbmV2ZXIgb3V0bGluZS9leHBhbmQuICovCiAgICAuYmlvLXByb3BlcnRpZXMtcGFuZWwtaW5wdXQ6Zm9jdXMsCiAgICAuYmlvLXByb3BlcnRpZXMtcGFuZWwtaW5wdXQ6Zm9jdXMtd2l0aGluLAogICAgLmJpby1wcm9wZXJ0aWVzLXBhbmVsIHNlbGVjdDpmb2N1cywKICAgIC5iaW8tcHJvcGVydGllcy1wYW5lbCB0ZXh0YXJlYTpmb2N1cywKICAgIC5iaW8tcHJvcGVydGllcy1wYW5lbCBpbnB1dDpmb2N1cyB7CiAgICAgIGJvcmRlci1jb2xvcjogdmFyKC0tYWNjZW50KSAhaW1wb3J0YW50OwogICAgICBib3JkZXItd2lkdGg6IDFweCAhaW1wb3J0YW50OwogICAgICBvdXRsaW5lOiBub25lICFpbXBvcnRhbnQ7CiAgICAgIGJveC1zaGFkb3c6IG5vbmUgIWltcG9ydGFudDsKICAgIH0KIiIiCm5lZWRsZSA9ICIgICAgLmJpby1wcm9wZXJ0aWVzLXBhbmVsLWlucHV0LCAuYmlvLXByb3BlcnRpZXMtcGFuZWwgc2VsZWN0LCAuYmlvLXByb3BlcnRpZXMtcGFuZWwgdGV4dGFyZWEsIC5iaW8tcHJvcGVydGllcy1wYW5lbCBpbnB1dCB7IGJhY2tncm91bmQ6IHZhcigtLWlucHV0KSAhaW1wb3J0YW50OyBjb2xvcjogdmFyKC0tZmcpICFpbXBvcnRhbnQ7IGJvcmRlci1jb2xvcjogdmFyKC0tYm9yZGVyKSAhaW1wb3J0YW50OyB9XG4iCmlmIG9sZCBpbiB0OgogICAgdCA9IHQucmVwbGFjZShvbGQsICIiKQppZiAiRm9jdXM6IGtlZXAgYSBzaW5nbGUgMXB4IGJvcmRlciIgbm90IGluIHQ6CiAgICBpZiBuZWVkbGUgbm90IGluIHQ6CiAgICAgICAgcmFpc2UgU3lzdGVtRXhpdCgiaW5zZXJ0IGFuY2hvciBtaXNzaW5nIikKICAgIHQgPSB0LnJlcGxhY2UobmVlZGxlLCBuZWVkbGUgKyBpbnNlcnQpCnAud3JpdGVfdGV4dCh0KQpwcmludCgiaW5kZXguaHRtbCByZXN0b3JlZCBhbmQgcGF0Y2hlZCIsIHAuc3RhdCgpLnN0X3NpemUpCg=="
         run: |
           set -euo pipefail
           git checkout b53509a86824b8235693db437f946bfe11abeea9 -- src/main/resources/bpmn-editor/index.html
-          python3 <<'PY'
-          from pathlib import Path
-          p = Path("src/main/resources/bpmn-editor/index.html")
-          t = p.read_text()
-          old = """    .bio-properties-panel-feel-editor-container:focus-within,
-    .bio-properties-panel-feel-editor-container.active {
-      outline: 1px solid var(--accent) !important;
-      outline-offset: 0 !important;
-      box-shadow: none !important;
-      border-color: var(--accent) !important;
-    }
-"""
-          insert = """    /* Focus: keep a single 1px border (panel-native); recolor to accent, never outline/expand. */
-    .bio-properties-panel-input:focus,
-    .bio-properties-panel-input:focus-within,
-    .bio-properties-panel select:focus,
-    .bio-properties-panel textarea:focus,
-    .bio-properties-panel input:focus {
-      border-color: var(--accent) !important;
-      border-width: 1px !important;
-      outline: none !important;
-      box-shadow: none !important;
-    }
-"""
-          needle = "    .bio-properties-panel-input, .bio-properties-panel select, .bio-properties-panel textarea, .bio-properties-panel input { background: var(--input) !important; color: var(--fg) !important; border-color: var(--border) !important; }\n"
-          if old in t:
-              t = t.replace(old, "")
-          if "Focus: keep a single 1px border" not in t:
-              if needle not in t:
-                  raise SystemExit("insert anchor missing")
-              t = t.replace(needle, needle + insert)
-          p.write_text(t)
-          print("index.html restored and patched", p.stat().st_size)
-          PY
-          # Cleanup probes / this one-shot workflow / bootstrap leftovers
+          python3 -c "import os,base64; open('/tmp/fix.py','wb').write(base64.b64decode(os.environ['FIX_PY_B64']))"
+          python3 /tmp/fix.py
           rm -f .github/workflows/restore-index-once.yml
           rm -f src/main/resources/bpmn-editor/assets/_restore_probe.txt
           rm -f src/main/resources/bpmn-editor/assets/_size_probe.css
