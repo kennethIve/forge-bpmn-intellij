@@ -1,13 +1,1100 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><title>BPMN</title></head>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>BPMN</title>
+  <link rel="stylesheet" href="assets/camunda-cloud-modeler.css"/>
+  <link rel="stylesheet" href="assets/bpmn-js-token-simulation.css"/>
+  <style>
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: var(--bg, #f7f8fa); color: var(--fg, #1e1f22); font: 13px/1.45 "JetBrains Sans", "IBM Plex Sans", "Segoe UI", sans-serif; overscroll-behavior: none; touch-action: none; }
+    :root { --bg:#FFFFFF; --canvas:#F7F8FA; --shape-fill:#FFFFFF; --icon:#1E1F22; --flow:#1E1F22; --label:#1E1F22; --panel:#FFFFFF; --fg:#1E1F22; --muted:#6c707e; --border:#d3d5db; --input:#ffffff; --hover:#ebecf0; --accent:#3574F0; --caret:#3574F0; --selection:rgba(84,138,247,.30); --active-line:rgba(0,0,0,.035); --palette:#FFFFFF; --palette-fg:#1E1F22; --palette-border:#D3D5DB; --palette-hover:#EBECF0; --token-sim-on-fill:rgba(16,208,112,.12); --token-sim-on-border:rgba(16,208,112,.55); --token-simulation-green-base-44:#10d070; --token-simulation-grey-darken-30:var(--fg); --token-simulation-grey-lighten-56:var(--hover); --token-simulation-grey-base-40:var(--muted); --token-simulation-silver-darken-94:var(--palette); --token-simulation-silver-base-97:var(--panel); --token-simulation-white:#ffffff; }
+    html.dark { --bg:#2B2D30; --canvas:#1E1F22; --shape-fill:#2B2D30; --icon:#DFE1E5; --flow:#DFE1E5; --label:#DFE1E5; --panel:#2B2D30; --fg:#DFE1E5; --muted:#9DA0A8; --border:#393B40; --input:#1E1F22; --hover:#3C3F44; --accent:#3574F0; --caret:#548AF7; --selection:rgba(84,138,247,.30); --active-line:rgba(255,255,255,.04); --palette:#2B2D30; --palette-fg:#DFE1E5; --palette-border:#43454A; --palette-hover:#3C3F44; --token-sim-on-fill:rgba(16,208,112,.12); --token-sim-on-border:rgba(16,208,112,.5); --token-simulation-grey-darken-30:#DFE1E5; --token-simulation-grey-lighten-56:#3C3F44; --token-simulation-grey-base-40:#9DA0A8; --token-simulation-silver-darken-94:#3C3F44; --token-simulation-silver-base-97:#2B2D30; }
+    html.hc { --caret:#FFFFFF; --selection:rgba(84,138,247,.30); --active-line:rgba(255,255,255,.06); }
+    #app { position: absolute; inset: 0; display: flex; min-height: 0; min-width: 0; background: var(--bg); }
+    #canvas { position: relative; flex: 1; min-width: 0; min-height: 0; background: var(--canvas); touch-action: none; overscroll-behavior: none; }
+    #canvas .bjs-container, #canvas .djs-container { position: absolute !important; inset: 0; width: auto !important; height: auto !important; background: var(--canvas) !important; background-image: none !important; }
+    .djs-grid, .layer-djs-grid, svg.djs-grid, .djs-grid-container { display: none !important; }
+    #toggle-props { width: 22px; flex-shrink: 0; border: 0; border-left: 1px solid var(--border); background: var(--panel); color: var(--muted); cursor: pointer; font: 13px/1 "JetBrains Mono", monospace; padding: 0; display: flex; align-items: center; justify-content: center; }
+    #toggle-props:hover, #toggle-props:focus-visible { background: var(--palette-hover); color: var(--palette-fg); outline: none; }
+    #toggle-props:active { background: var(--hover); color: var(--fg); }
+    #properties { width: 280px; flex-shrink: 0; border-left: 1px solid var(--border); background: var(--panel); overflow: hidden; color: var(--fg); }
+    #app.props-collapsed #properties { display: none; }
+    #properties .bio-properties-panel-container, #properties .bio-properties-panel { height: 100%; background: var(--panel) !important; color: var(--fg) !important; }
+    .bio-properties-panel-header, .bio-properties-panel-group, .bio-properties-panel-group-header, .bio-properties-panel-scroll-container { background: var(--panel) !important; color: var(--fg) !important; border-color: var(--border) !important; }
+    .bio-properties-panel-input, .bio-properties-panel select, .bio-properties-panel textarea, .bio-properties-panel input { background: var(--input) !important; color: var(--fg) !important; border-color: var(--border) !important; }
+    /* Focus: keep a single 1px border (panel-native); recolor to accent, never outline/expand. */
+    .bio-properties-panel-input:focus,
+    .bio-properties-panel-input:focus-within,
+    .bio-properties-panel select:focus,
+    .bio-properties-panel textarea:focus,
+    .bio-properties-panel input:focus {
+      border-color: var(--accent) !important;
+      border-width: 1px !important;
+      outline: none !important;
+      box-shadow: none !important;
+    }
+    .bio-properties-panel input,
+    .bio-properties-panel textarea,
+    .bio-properties-panel-input,
+    .bio-properties-panel select { caret-color: var(--caret) !important; }
+    /* FEEL / CodeMirror uses the native caret on contenteditable .cm-content (no .cm-cursorLayer). */
+    #properties [contenteditable],
+    .bio-properties-panel [contenteditable],
+    .bio-properties-panel .cm-content,
+    .bio-properties-panel .cm-editor [contenteditable],
+    .bio-properties-panel-feel-editor-container .cm-content,
+    .bio-properties-panel-feelers-editor .cm-content {
+      caret-color: var(--caret) !important;
+    }
+    .bio-properties-panel-feel-editor-container .cm-cursor,
+    .bio-properties-panel-feel-editor-container .cm-dropCursor {
+      border-left: 2px solid var(--caret) !important;
+      border-left-width: 2px !important;
+      margin-left: 0 !important;
+      opacity: 1 !important;
+    }
+    .bio-properties-panel-feel-editor-container .cm-cursorLayer {
+      animation: none !important;
+    }
+    .bio-properties-panel-feel-editor-container .cm-cursorLayer .cm-cursor {
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
+    .bio-properties-panel-feel-editor-container .cm-selectionBackground,
+    .bio-properties-panel-feel-editor-container .cm-content ::selection,
+    .bio-properties-panel-feel-editor-container .cm-content::-moz-selection {
+      background: var(--selection) !important;
+    }
+    .bio-properties-panel-feel-editor-container .cm-focused .cm-selectionBackground,
+    .bio-properties-panel-feel-editor-container.cm-focused .cm-selectionBackground,
+    .cm-editor.cm-focused .cm-selectionBackground {
+      background: var(--selection) !important;
+    }
+    .bio-properties-panel-feel-editor-container .cm-activeLine {
+      background: var(--active-line) !important;
+    }
+    /* Dark FEEL gutter (= indicator): match input chrome, not light-theme gray. */
+    html.dark .bio-properties-panel-feel-indicator,
+    html.hc .bio-properties-panel-feel-indicator {
+      background: var(--input) !important;
+      background-color: var(--input) !important;
+      border-color: var(--border) !important;
+      color: var(--muted) !important;
+    }
+    html.dark .bio-properties-panel-feel-container:has(.bio-properties-panel-input:focus-within) .bio-properties-panel-feel-indicator,
+    html.hc .bio-properties-panel-feel-container:has(.bio-properties-panel-input:focus-within) .bio-properties-panel-feel-indicator {
+      border-color: var(--accent) !important;
+    }
+    html.dark .bio-properties-panel-open-feel-popup,
+    html.hc .bio-properties-panel-open-feel-popup {
+      color: var(--muted) !important;
+    }
+    html.dark .bio-properties-panel-open-feel-popup svg,
+    html.dark .bio-properties-panel-open-feel-popup svg path,
+    html.hc .bio-properties-panel-open-feel-popup svg,
+    html.hc .bio-properties-panel-open-feel-popup svg path {
+      fill: var(--muted) !important;
+      stroke: var(--muted) !important;
+      color: var(--muted) !important;
+    }
+    /*
+     * FEEL syntax tokens (CodeMirror 6 HighlightStyle → stable ͼ* classes in this
+     * camunda-cloud-modeler bundle). Light theme keeps upstream colors.
+     * Observed mapping: ͼz/ͼ12 var/prop, ͼx operators, ͼv number, ͼp keyword, ͼt string.
+     */
+    html.dark .bio-properties-panel-feel-editor-container .cm-content,
+    html.dark .bio-properties-panel-feel-editor-container .cm-line,
+    html.dark .bio-properties-panel-feel-editor-container .cm-content span,
+    html.dark .bio-properties-panel-feelers-editor .cm-content,
+    html.dark .bio-properties-panel-feelers-editor .cm-content span {
+      color: var(--fg) !important;
+    }
+    html.dark .bio-properties-panel-feel-editor-container .cm-content .ͼp,
+    html.dark .bio-properties-panel-feelers-editor .cm-content .ͼp { color: #CF8E6D !important; } /* keyword / bool */
+    html.dark .bio-properties-panel-feel-editor-container .cm-content .ͼt,
+    html.dark .bio-properties-panel-feelers-editor .cm-content .ͼt { color: #6AAB73 !important; } /* string */
+    html.dark .bio-properties-panel-feel-editor-container .cm-content .ͼv,
+    html.dark .bio-properties-panel-feelers-editor .cm-content .ͼv { color: #2AACB8 !important; } /* number */
+    html.hc .bio-properties-panel-feel-editor-container .cm-content,
+    html.hc .bio-properties-panel-feel-editor-container .cm-line,
+    html.hc .bio-properties-panel-feel-editor-container .cm-content span,
+    html.hc .bio-properties-panel-feelers-editor .cm-content,
+    html.hc .bio-properties-panel-feelers-editor .cm-content span {
+      color: #FFFFFF !important;
+    }
+    html.hc .bio-properties-panel-feel-editor-container .cm-content .ͼp,
+    html.hc .bio-properties-panel-feelers-editor .cm-content .ͼp { color: #FFE66D !important; } /* keyword */
+    html.hc .bio-properties-panel-feel-editor-container .cm-content .ͼt,
+    html.hc .bio-properties-panel-feelers-editor .cm-content .ͼt { color: #7CFC98 !important; } /* string */
+    html.hc .bio-properties-panel-feel-editor-container .cm-content .ͼv,
+    html.hc .bio-properties-panel-feelers-editor .cm-content .ͼv { color: #7FDBFF !important; } /* number */
+    .djs-palette { background: var(--palette) !important; border-color: var(--palette-border) !important; color: var(--palette-fg) !important; }
+    .djs-palette .entry { color: var(--palette-fg) !important; fill: var(--palette-fg) !important; }
+    .djs-palette .entry:hover { background: var(--palette-hover) !important; }
+    .djs-palette .separator { border-color: var(--palette-border) !important; }
+    .djs-popup, .djs-context-pad .entry { background: var(--palette) !important; color: var(--palette-fg) !important; border-color: var(--palette-border) !important; }
+    html.dark .djs-outline { fill: none !important; stroke: #7EB0FF !important; stroke-width: 2px !important; }
+    html.dark .djs-context-pad.open { display: block; width: auto !important; max-width: 132px; padding: 6px; background: #2B2D30; border: 1px solid #6A7380; border-radius: 8px; box-shadow: 0 10px 28px rgba(0,0,0,.5), 0 0 0 1px rgba(126,176,255,.35); }
+    html.dark .djs-context-pad .entry { width: 28px !important; height: 28px !important; font-size: 18px !important; line-height: 28px !important; margin: 2px !important; border-radius: 6px !important; background: #3C3F44 !important; color: #F2F4F7 !important; box-shadow: none !important; }
+    html.dark .djs-context-pad .entry:hover { background: #548AF7 !important; color: #fff !important; }
+    html.dark .djs-popup { box-shadow: 0 16px 40px rgba(0,0,0,.55), 0 0 0 1px rgba(126,176,255,.45) !important; border: 1px solid #7EB0FF !important; border-radius: 8px !important; }
+    html.dark .djs-popup .entry.selected, html.dark .djs-popup .entry:hover { background: #2E436E !important; }
+    html.dark .djs-popup .entry.selected { box-shadow: inset 3px 0 0 #7EB0FF; }
+    .djs-connection .djs-visual > path { stroke: var(--icon) !important; }
+    marker path, marker polygon { fill: var(--icon) !important; stroke: var(--icon) !important; }
+    .djs-element[data-element-id$="_label"] text,
+    .djs-element[data-element-id$="_label"] .djs-label,
+    .djs-label, .djs-label text {
+      fill: var(--label) !important;
+      stroke: none !important;
+      font-family: Arial, Helvetica, sans-serif !important;
+      font-weight: 400 !important;
+    }
+    .djs-shape:not([data-element-id$="_label"]) .djs-visual > :first-child { fill: var(--shape-fill) !important; stroke: var(--icon) !important; }
+    .djs-element[data-element-id$="_label"] .djs-visual > :not(text) { fill: none !important; stroke: none !important; }
+    .bjs-container .djs-palette { top: 60px !important; }
+    .bts-toggle-mode {
+      display: inline-flex !important;
+      align-items: center;
+      position: absolute !important;
+      top: 16px !important;
+      left: 20px !important;
+      z-index: 1000 !important;
+      box-sizing: border-box;
+      min-height: 28px;
+      height: 28px;
+      background: var(--palette) !important;
+      color: var(--palette-fg) !important;
+      border: 1px solid var(--palette-border) !important;
+      border-radius: 6px;
+      padding: 4px 10px !important;
+      font-size: 13px !important;
+      line-height: 1;
+      cursor: pointer;
+      user-select: none;
+      box-shadow: none !important;
+    }
+    .bts-toggle-mode .bts-toggle { margin-left: .25em; display: inline-flex; }
+    .bjs-container.simulation .bts-toggle-mode {
+      background: var(--token-sim-on-fill) !important;
+      color: var(--fg) !important;
+      border: 1px solid var(--token-sim-on-border) !important;
+    }
+    .bts-toggle-mode:hover,
+    .bjs-container.simulation .bts-toggle-mode:hover {
+      background: var(--hover) !important;
+      color: var(--fg) !important;
+      border-color: var(--border) !important;
+    }
+    .bjs-container.simulation .bts-toggle-mode:hover {
+      border-color: var(--token-sim-on-border) !important;
+    }
+    /* Node play pads: Kenneth gray chips — 17×17, radius 3px; no green/blue/accent rim.
+       Idle opacity 1 (no .35 fade). Gateway offsets preserved. Toggle/palette green left alone. */
+    .djs-overlay-bts-context-menu .bts-context-pad,
+    .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled),
+    .bts-context-pad,
+    .bts-context-pad:not(.disabled) {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      width: 17px !important;
+      height: 17px !important;
+      min-width: 17px !important;
+      min-height: 17px !important;
+      box-sizing: border-box !important;
+      background: #EBECF0 !important;
+      background-color: #EBECF0 !important;
+      color: #818594 !important;
+      border: none !important;
+      border-radius: 3px !important;
+      opacity: 1 !important;
+      font-size: 10px !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+    html.dark .djs-overlay-bts-context-menu .bts-context-pad,
+    html.dark .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled),
+    html.dark .bts-context-pad,
+    html.dark .bts-context-pad:not(.disabled) {
+      background: #3C3F41 !important;
+      background-color: #3C3F41 !important;
+      color: #6C707E !important;
+      border: none !important;
+    }
+    /* Separate overlapping gateway pads: Trigger left, route-select right (~9px gap) */
+    .bts-context-pad[title="Trigger Event"],
+    .djs-overlay-bts-context-menu .bts-context-pad[title="Trigger Event"] {
+      transform: none !important;
+    }
+    .bts-context-pad[title="Set Sequence Flow"],
+    .djs-overlay-bts-context-menu .bts-context-pad[title="Set Sequence Flow"] {
+      transform: translate(26px, 0) !important;
+    }
+    /* Pause pads offset the other way so they do not stack on Trigger */
+    .bts-context-pad[title="Add pause point"],
+    .bts-context-pad[title="Remove pause point"],
+    .djs-overlay-bts-context-menu .bts-context-pad[title="Add pause point"],
+    .djs-overlay-bts-context-menu .bts-context-pad[title="Remove pause point"] {
+      transform: translate(-26px, 0) !important;
+    }
+    /* Kill remaining white/grey fills from upstream on pad children/svg (chip fill stays on pad) */
+    .djs-overlay-bts-context-menu .bts-context-pad *,
+    .djs-overlay-bts-context-menu .bts-context-pad svg,
+    .djs-overlay-bts-context-menu .bts-context-pad .bts-icon,
+    .bts-context-pad *,
+    .bts-context-pad svg,
+    .bts-context-pad .bts-icon {
+      background: transparent !important;
+      background-color: transparent !important;
+      box-shadow: none !important;
+    }
+    .djs-overlay-bts-context-menu .bts-context-pad .bts-icon,
+    .bts-context-pad .bts-icon {
+      width: 11px !important;
+      height: 11px !important;
+    }
+    .djs-overlay-bts-context-menu .bts-context-pad svg,
+    .bts-context-pad svg {
+      width: 11px !important;
+      height: 11px !important;
+    }
+    /* Upstream: .show-hover pads stay hidden until overlay/node hover (startable pads lack this class) */
+    .djs-overlays:not(.hover) .bts-context-pad:not(:hover):not(:focus).show-hover,
+    .djs-overlays:not(.hover) .djs-overlay-bts-context-menu .bts-context-pad:not(:hover):not(:focus).show-hover {
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+    /* Overlay hover: reveal pads at idle chip chrome */
+    .djs-overlays.hover .bts-context-pad,
+    .djs-overlays.hover .bts-context-pad:not(.disabled) {
+      opacity: 1 !important;
+    }
+    /* Active (.active class): gray chip fill — never green/blue rim; idle stays base while sim ON */
+    .bts-context-pad.active,
+    .bts-context-pad:not(.disabled).active,
+    .djs-overlay-bts-context-menu .bts-context-pad.active {
+      background: #D3D5DB !important;
+      background-color: #D3D5DB !important;
+      color: #1E1F22 !important;
+      opacity: 1 !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+    html.dark .bts-context-pad.active,
+    html.dark .bts-context-pad:not(.disabled).active,
+    html.dark .djs-overlay-bts-context-menu .bts-context-pad.active {
+      background: #5A5D61 !important;
+      background-color: #5A5D61 !important;
+      color: #DFE1E5 !important;
+      border: none !important;
+    }
+    /* Hover / focus-visible */
+    .bts-context-pad:not(.disabled):hover,
+    .bts-context-pad:not(.disabled):focus-visible,
+    .bts-context-pad:hover,
+    .bts-context-pad:focus-visible,
+    .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):hover,
+    .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):focus-visible {
+      opacity: 1 !important;
+      background: #DFE1E5 !important;
+      background-color: #DFE1E5 !important;
+      color: #1E1F22 !important;
+      border: none !important;
+    }
+    html.dark .bts-context-pad:not(.disabled):hover,
+    html.dark .bts-context-pad:not(.disabled):focus-visible,
+    html.dark .bts-context-pad:hover,
+    html.dark .bts-context-pad:focus-visible,
+    html.dark .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):hover,
+    html.dark .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):focus-visible {
+      background: #4E5154 !important;
+      background-color: #4E5154 !important;
+      color: #DFE1E5 !important;
+      border: none !important;
+    }
+    /* Pressed (:active): library rarely toggles .active on pads — use active gray so ladder is visible.
+       Same as .active (#D3D5DB / #5A5D61); drop unreachable deeper #C9CCD1 / #65696E on pads. */
+    .bts-context-pad:not(.disabled):active,
+    .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):active {
+      background: #D3D5DB !important;
+      background-color: #D3D5DB !important;
+      color: #1E1F22 !important;
+      opacity: 1 !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+    html.dark .bts-context-pad:not(.disabled):active,
+    html.dark .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled):active {
+      background: #5A5D61 !important;
+      background-color: #5A5D61 !important;
+      color: #DFE1E5 !important;
+      border: none !important;
+    }
+    .bts-context-pad.disabled,
+    .djs-overlay-bts-context-menu .bts-context-pad.disabled {
+      background: #EBECF0 !important;
+      background-color: #EBECF0 !important;
+      color: #818594 !important;
+      opacity: .35 !important;
+      border: none !important;
+    }
+    html.dark .bts-context-pad.disabled,
+    html.dark .djs-overlay-bts-context-menu .bts-context-pad.disabled {
+      background: #3C3F41 !important;
+      background-color: #3C3F41 !important;
+      color: #6C707E !important;
+    }
+    /* Top sim palette / ActionButton chips */
+    .bts-palette .bts-entry {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      width: 26px !important;
+      height: 26px !important;
+      box-sizing: border-box;
+      background: var(--palette) !important;
+      background-color: var(--palette) !important;
+      color: var(--muted) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 6px !important;
+      opacity: 1 !important;
+      font-size: 14px !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      margin-bottom: 6px;
+    }
+    .bts-palette .bts-entry:not(.disabled):hover,
+    .bts-palette .bts-entry:hover {
+      background: var(--hover) !important;
+      background-color: var(--hover) !important;
+      color: var(--fg) !important;
+      border-color: var(--border) !important;
+    }
+    .bts-palette .bts-entry.active,
+    .bts-palette .bts-entry.bts-play-pause.active,
+    .bts-play-pause.active,
+    .bjs-container.paused .bts-play-pause.active,
+    .bjs-container.simulation .bts-palette .bts-entry.active {
+      background: var(--token-sim-on-fill) !important;
+      background-color: var(--token-sim-on-fill) !important;
+      color: var(--fg) !important;
+      border: 1px solid var(--token-sim-on-border) !important;
+      box-shadow: none !important;
+    }
+    /* Soften solid green node notifications / scopes */
+    .bts-element-notification.success,
+    .bts-notifications .bts-notification.success {
+      background: var(--token-sim-on-fill) !important;
+      background-color: var(--token-sim-on-fill) !important;
+      color: var(--fg) !important;
+      border: 1px solid var(--token-sim-on-border) !important;
+    }
+    .bts-scopes .bts-scope.active,
+    .bts-token-count {
+      background: var(--palette) !important;
+      color: var(--fg) !important;
+      border: 1px solid var(--border) !important;
+    }
+    .bts-token-count.waiting,
+    .bts-token-count:not(.inactive) {
+      border-color: var(--token-sim-on-border) !important;
+    }
+    .bts-palette .bts-entry.disabled {
+      color: var(--muted) !important;
+      opacity: .45 !important;
+    }
+    .bts-scopes {
+      top: 18px !important;
+      height: 28px;
+      align-items: center;
+    }
+    .bts-scopes .bts-scope {
+      width: 24px !important;
+      height: 24px !important;
+      line-height: 22px !important;
+      font-size: 12px !important;
+      background: var(--palette) !important;
+      color: var(--fg) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 50% !important;
+    }
+    .bts-scopes .bts-scope:hover,
+    .bts-scopes .bts-scope.inactive:hover {
+      background: var(--hover) !important;
+      opacity: 1 !important;
+    }
+    .bts-scopes .bts-scope.focussed {
+      box-shadow: 0 0 0 1px var(--token-sim-on-border) !important;
+      border-color: var(--token-sim-on-border) !important;
+    }
+    /* Bottom speed bar: IDE toolbar strip, quiet chips */
+    .bts-set-animation-speed {
+      bottom: 16px !important;
+      height: 30px;
+      box-sizing: border-box;
+      background: var(--panel) !important;
+      background-color: var(--panel) !important;
+      color: var(--fg) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 6px !important;
+      padding: 2px 4px 2px 8px !important;
+      font-size: 12px !important;
+      box-shadow: none !important;
+      overflow: hidden;
+    }
+    .bts-set-animation-speed .bts-animation-speed-buttons {
+      margin-left: 4px !important;
+      gap: 2px;
+      align-items: center;
+    }
+    .bts-set-animation-speed .bts-animation-speed-button {
+      width: 26px !important;
+      height: 24px !important;
+      padding: 0 !important;
+      box-sizing: border-box;
+      display: inline-flex !important;
+      align-items: center;
+      justify-content: center;
+      background: transparent !important;
+      background-color: transparent !important;
+      color: var(--muted) !important;
+      border: 1px solid transparent !important;
+      border-radius: 4px !important;
+      cursor: pointer;
+    }
+    .bts-set-animation-speed .bts-animation-speed-button:hover {
+      background: var(--hover) !important;
+      background-color: var(--hover) !important;
+      color: var(--fg) !important;
+      border-color: var(--border) !important;
+    }
+    .bts-set-animation-speed .bts-animation-speed-button.active {
+      background: var(--token-sim-on-fill) !important;
+      background-color: var(--token-sim-on-fill) !important;
+      color: var(--fg) !important;
+      border: 1px solid var(--token-sim-on-border) !important;
+    }
+    .bts-log {
+      background: var(--panel) !important;
+      color: var(--fg) !important;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+    .bts-log .bts-header {
+      background: var(--palette) !important;
+      color: var(--fg) !important;
+      border-bottom: 1px solid var(--border);
+      height: 28px !important;
+    }
+    .bts-log .bts-close { color: var(--muted) !important; }
+    .bts-log .bts-close:hover { color: var(--fg) !important; background: var(--hover) !important; }
+    .bts-log .bts-entry {
+      background: var(--input, var(--panel)) !important;
+      color: var(--fg) !important;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+    .bts-log .bts-entry.success {
+      background: var(--token-sim-on-fill) !important;
+      color: var(--fg) !important;
+      border-color: var(--token-sim-on-border) !important;
+    }
+    .bts-token-count { background: var(--palette) !important; color: var(--fg) !important; }
+    .bts-icon, .bts-toggle-mode .bts-icon, .bts-palette .bts-icon {
+      display: inline-flex !important;
+      align-items: center;
+      justify-content: center;
+      width: 14px;
+      height: 14px;
+      color: inherit !important;
+    }
+    .bts-icon svg, .bts-toggle-mode svg, .bts-palette svg,
+    .bts-set-animation-speed svg {
+      display: block !important;
+      width: 14px !important;
+      height: 14px !important;
+      overflow: visible;
+    }
+    /* Play-pad icons stay smaller than toggle/palette chips */
+    .djs-overlay-bts-context-menu .bts-context-pad .bts-icon,
+    .bts-context-pad .bts-icon {
+      display: inline-flex !important;
+      align-items: center;
+      justify-content: center;
+      width: 11px !important;
+      height: 11px !important;
+      color: inherit !important;
+      background: transparent !important;
+      background-color: transparent !important;
+    }
+    .djs-overlay-bts-context-menu .bts-context-pad svg,
+    .bts-context-pad svg {
+      display: block !important;
+      width: 11px !important;
+      height: 11px !important;
+      overflow: visible;
+      background: transparent !important;
+      background-color: transparent !important;
+    }
+    .bts-icon svg path, .bts-icon svg rect,
+    .bts-toggle-mode svg path, .bts-context-pad svg path, .bts-palette svg path,
+    .bts-set-animation-speed svg path {
+      fill: currentColor !important;
+      stroke: none !important;
+    }
+    .bts-palette { position: absolute; top: 60px; left: 20px; z-index: 1000; }
+    .bts-palette.hidden,
+    .bjs-container:not(.simulation) .bts-palette,
+    #app:not(.simulating) .bts-palette { display: none !important; }
+    .bjs-container.simulation .djs-palette,
+    .djs-palette.hidden,
+    #app.simulating .djs-palette { display: none !important; }
+    .bjs-container.simulation .djs-overlay:not(.djs-overlay-bts-context-menu, .djs-overlay-bts-element-notification, .djs-overlay-bts-token-count, .djs-overlay-drilldown) { display: none !important; }
+    .bjs-powered-by { opacity: .5; }
+    html.dark .djs-minimap { background: #3C3F44 !important; color: #DFE1E5 !important; border: 1px solid #4A4E55 !important; }
+    html.dark .djs-parent {
+      --canvas-fill-color: #1E1F22;
+      --popup-background-color: #2B2D30;
+      --popup-border-color: #43454A;
+      --popup-shadow-color: rgba(0,0,0,.45);
+      --popup-disabled-color: #6F737A;
+      --popup-description-color: #9DA0A8;
+      --popup-no-results-color: #9DA0A8;
+      --popup-entry-title-color: #9DA0A8;
+      --popup-entry-hover-color: #3C3F44;
+      --popup-search-border-color: #43454A;
+      --popup-search-focus-background-color: #1E1F22;
+      --popup-tab-color: #9DA0A8;
+      --popup-tab-hover-color: #DFE1E5;
+      --popup-tab-active-color: #DFE1E5;
+      --shape-drop-allowed-fill-color: #3A3F48;
+      --shape-connect-allowed-fill-color: #3A3F48;
+      --shape-drop-not-allowed-fill-color: #4A3535;
+      --context-pad-entry-background-color: #2B2D30;
+      --context-pad-entry-hover-background-color: #3C3F44;
+    }
+    html.dark .djs-popup, html.dark .djs-popup-parent, html.dark .djs-popup-body {
+      background: #2B2D30 !important; color: #DFE1E5 !important; border-color: #43454A !important;
+    }
+    html.dark .djs-popup .entry, html.dark .djs-popup-title, html.dark .djs-popup-label { color: #DFE1E5 !important; }
+    html.dark .djs-popup-search input { background: #1E1F22 !important; color: #DFE1E5 !important; border-color: #43454A !important; }
+    html.dark .djs-popup-entry-docs { background: #3C3F44 !important; color: #DFE1E5 !important; border-color: #43454A !important; }
+    html.dark .djs-container svg.new-parent { background: #3A3F48 !important; }
+    html.dark .djs-container svg.drop-not-ok { background: #4A3535 !important; }
+    #app.simulating #properties, #app.simulating #toggle-props { display: none; }
+    .bpmn-lint-error { background: #c45c58; }
+    .bpmn-lint-warning { background: #c4a574; }
+  </style>
+</head>
 <body>
-<script>
-(async function () {
-  var parts = ["assets/_index_part0.txt","assets/_index_part1.txt","assets/_index_part2.txt"];
-  var texts = await Promise.all(parts.map(function (u) { return fetch(u).then(function (r) { return r.text(); }); }));
-  document.open();
-  document.write(texts.join(""));
-  document.close();
-})();
-</script>
-</body></html>
+  <div id="app">
+    <div id="canvas"></div>
+    <button type="button" id="toggle-props" title="Hide properties" aria-expanded="true">‹</button>
+    <aside id="properties"></aside>
+  </div>
+  <script src="camunda-cloud-modeler.production.min.js"></script>
+  <script>
+    const TASK = new Set(["task","userTask","serviceTask","sendTask","receiveTask","scriptTask","businessRuleTask","manualTask","callActivity"]);
+    const NODES = new Set(["task","userTask","serviceTask","sendTask","receiveTask","scriptTask","businessRuleTask","manualTask","callActivity","startEvent","endEvent","intermediateThrowEvent","intermediateCatchEvent","boundaryEvent","exclusiveGateway","parallelGateway","inclusiveGateway","eventBasedGateway","complexGateway","subProcess"]);
+    function locals(root, name) {
+      return [...root.getElementsByTagName("*")].filter(function (n) { return n.localName === name; });
+    }
+    function attr(el, name) { return el.getAttribute(name) || ""; }
+    function child(el, name) { return [...el.children].find(function (c) { return c.localName === name; }); }
+    function isBpmn(el) { return !el.namespaceURI || el.namespaceURI === "http://www.omg.org/spec/BPMN/20100524/MODEL"; }
+    function zeebe(el, name) {
+      var ext = child(el, "extensionElements");
+      if (!ext) return null;
+      return [...ext.children].find(function (c) { return c.localName === name; }) || null;
+    }
+    function escAttr(s) {
+      return String(s).replace(/[&<>"']/g, function (c) {
+        if (c === "&") return "&" + "amp;";
+        if (c === "<") return "&" + "lt;";
+        if (c === ">") return "&" + "gt;";
+        if (c === '"') return "&" + "quot;";
+        return "&" + "#39;";
+      });
+    }
+    function lintBpmnXml(xml) {
+      var issues = [];
+      var trimmed = (xml || "").trim();
+      if (!trimmed) return [{ id: "empty", level: "error", rule: "xml", message: "Diagram is empty." }];
+      var doc = new DOMParser().parseFromString(trimmed, "application/xml");
+      if (doc.querySelector("parsererror")) return [{ id: "xml-parse", level: "error", rule: "xml", message: "BPMN XML is not well-formed." }];
+      var definitions = locals(doc, "definitions")[0];
+      if (!definitions) return [{ id: "no-definitions", level: "error", rule: "schema", message: "Missing bpmn:definitions root." }];
+      var processes = locals(definitions, "process");
+      if (!processes.length) return [{ id: "no-process", level: "error", rule: "schema", message: "No bpmn:process in this diagram." }];
+      var ids = new Map();
+      for (var el of definitions.querySelectorAll("*")) {
+        var id = attr(el, "id");
+        if (!id) continue;
+        ids.set(id, (ids.get(id) || 0) + 1);
+      }
+      for (var entry of ids) {
+        if (entry[1] > 1) issues.push({ id: "dup-" + entry[0], elementId: entry[0], level: "error", rule: "duplicate-id", message: "Duplicate id " + entry[0] + "." });
+      }
+      processes.forEach(function (process) {
+        var pid = attr(process, "id") || "process";
+        if (!locals(process, "startEvent").length) issues.push({ id: "no-start-" + pid, elementId: pid, level: "error", rule: "start-event", message: "Process has no start event." });
+        if (!locals(process, "endEvent").length) issues.push({ id: "no-end-" + pid, elementId: pid, level: "error", rule: "end-event", message: "Process has no end event." });
+        for (var task of [...process.querySelectorAll("*")].filter(function (n) { return TASK.has(n.localName) && isBpmn(n); })) {
+          var tid = attr(task, "id");
+          if (!attr(task, "name").trim()) issues.push({ id: "unnamed-" + tid, elementId: tid, level: "warning", rule: "task-name", message: task.localName + " should have a name." });
+        }
+        var defaults = new Set([...process.querySelectorAll("*")].map(function (n) { return attr(n, "default"); }).filter(Boolean));
+        for (var gw of locals(process, "exclusiveGateway")) {
+          var gid = attr(gw, "id");
+          var outgoing = locals(gw, "outgoing").map(function (n) { return (n.textContent || "").trim(); });
+          if (outgoing.length < 2) issues.push({ id: "xor-out-" + gid, elementId: gid, level: "warning", rule: "gateway", message: "Exclusive gateway should have at least two outgoing flows." });
+          for (var flowId of outgoing) {
+            var flow = locals(process, "sequenceFlow").find(function (f) { return attr(f, "id") === flowId; });
+            if (!flow) continue;
+            var named = attr(flow, "name").trim();
+            var condEl = locals(flow, "conditionExpression")[0];
+            var condition = condEl && (condEl.textContent || "").trim();
+            if (!named && !condition && !defaults.has(flowId)) issues.push({ id: "xor-cond-" + flowId, elementId: flowId, level: "warning", rule: "flow-condition", message: "Outgoing flow from exclusive gateway needs a name, condition, or default." });
+          }
+        }
+        for (var sf of locals(process, "sequenceFlow")) {
+          var fid = attr(sf, "id");
+          if (!attr(sf, "sourceRef") || !attr(sf, "targetRef")) issues.push({ id: "flow-ends-" + fid, elementId: fid, level: "error", rule: "sequence-flow", message: "Sequence flow is missing source or target." });
+        }
+        for (var node of [...process.querySelectorAll("*")].filter(function (n) { return NODES.has(n.localName) && isBpmn(n); })) {
+          if (node.localName === "boundaryEvent") continue;
+          var nid = attr(node, "id");
+          var incoming = 0, outgoingN = 0;
+          for (var sf2 of locals(process, "sequenceFlow")) {
+            if (attr(sf2, "sourceRef") === nid) outgoingN++;
+            if (attr(sf2, "targetRef") === nid) incoming++;
+          }
+          if (node.localName === "startEvent") { if (!outgoingN) issues.push({ id: "start-out-" + nid, elementId: nid, level: "error", rule: "disconnected", message: "Start event has no outgoing flow." }); continue; }
+          if (node.localName === "endEvent") { if (!incoming) issues.push({ id: "end-in-" + nid, elementId: nid, level: "error", rule: "disconnected", message: "End event has no incoming flow." }); continue; }
+          if (!incoming && !outgoingN) issues.push({ id: "orphan-" + nid, elementId: nid, level: "warning", rule: "disconnected", message: node.localName + " is not connected." });
+          else if (!incoming) issues.push({ id: "no-in-" + nid, elementId: nid, level: "warning", rule: "disconnected", message: node.localName + " has no incoming flow." });
+          var job = zeebe(node, "taskDefinition") ? attr(zeebe(node, "taskDefinition"), "type") : "";
+          if ((node.localName === "serviceTask" || node.localName === "sendTask") && !job) {
+            issues.push({ id: "job-" + nid, elementId: nid, level: "error", rule: "camunda8-job-type", message: node.localName + " needs a Zeebe job type." });
+          }
+        }
+      });
+      return issues;
+    }
+
+    var modeler = new BpmnModeler({
+      container: "#canvas",
+      propertiesPanel: { parent: "#properties" },
+      bpmnRenderer: {"defaultFillColor":"#FFFFFF","defaultStrokeColor":"#1E1F22","defaultLabelColor":"#1E1F22"}
+    });
+    window.modeler = modeler;
+    try {
+      var grid = modeler.get("grid");
+      if (grid && grid.setVisible) grid.setVisible(false);
+    } catch (e) {}
+    try {
+      modeler.get("toggleMode");
+    } catch (err) {
+      console.error("token simulation module missing", err);
+    }
+    window.setTimeout(function () {
+      if (document.querySelector(".bts-toggle-mode")) return;
+      var fallback = document.createElement("button");
+      fallback.type = "button";
+      fallback.className = "bts-toggle-mode";
+      fallback.textContent = "Token Simulation";
+      fallback.addEventListener("click", function () {
+        try { modeler.get("toggleMode").toggleMode(); } catch (e) {}
+      });
+      document.getElementById("canvas").appendChild(fallback);
+    }, 0);
+    var applying = false;
+    var simulating = false;
+    modeler.on("tokenSimulation.toggleMode", function (e) {
+      simulating = !!(e && e.active);
+      document.getElementById("app").classList.toggle("simulating", simulating);
+    });
+
+    function paintLint(issues) {
+      var overlays = modeler.get("overlays");
+      overlays.remove({ type: "lint" });
+      issues.forEach(function (issue) {
+        if (!issue.elementId) return;
+        try {
+          overlays.add(issue.elementId, "lint", {
+            position: { top: -8, left: -8 },
+            html: '<span class="bpmn-lint-mark bpmn-lint-' + issue.level + '" title="' + escAttr(issue.message) + '"></span>'
+          });
+        } catch (e) {}
+      });
+    }
+
+    var persistTimer = null;
+    async function flushPersist() {
+      if (applying || simulating) return;
+      try {
+        var result = await modeler.saveXML({ format: true });
+        paintLint(lintBpmnXml(result.xml));
+        if (window.__onXmlChange) window.__onXmlChange(result.xml);
+      } catch (err) {}
+    }
+    function persist() {
+      if (applying || simulating) return;
+      if (persistTimer) window.clearTimeout(persistTimer);
+      persistTimer = window.setTimeout(flushPersist, 180);
+    }
+
+    modeler.on("commandStack.changed", persist);
+
+    function fit() {
+      try { modeler.get("canvas").zoom("fit-viewport", "auto"); } catch (e) {}
+    }
+    window.__fit = fit;
+    window.__applyTheme = function (t) {
+      var root = document.documentElement;
+      var dark = !!t.dark;
+      root.classList.toggle("dark", dark);
+      root.classList.toggle("hc", !!t.hc);
+      root.classList.remove("dark-diagram");
+      ["bg","panel","fg","muted","border","input","hover","accent"].forEach(function (k) {
+        if (t[k]) root.style.setProperty("--" + k, t[k]);
+      });
+      var fill, stroke, label, canvas, panel, palette;
+      if (dark) {
+        canvas = t.canvas || "#1E1F22";
+        panel = t.panel || "#2B2D30";
+        fill = "#2B2D30";
+        stroke = "#DFE1E5";
+        label = "#DFE1E5";
+        palette = "#2B2D30";
+        root.style.setProperty("--canvas", canvas);
+        root.style.setProperty("--shape-fill", fill);
+        root.style.setProperty("--icon", stroke);
+        root.style.setProperty("--flow", stroke);
+        root.style.setProperty("--label", label);
+        root.style.setProperty("--palette", palette);
+        root.style.setProperty("--palette-fg", "#DFE1E5");
+        root.style.setProperty("--palette-border", "#43454A");
+        root.style.setProperty("--palette-hover", "#3C3F44");
+        root.style.setProperty("--token-sim-on-fill", "rgba(16,208,112,.12)");
+        root.style.setProperty("--token-sim-on-border", "rgba(16,208,112,.5)");
+      } else {
+        canvas = t.canvas || "#F7F8FA";
+        panel = t.panel || "#FFFFFF";
+        fill = "#FFFFFF";
+        stroke = "#1E1F22";
+        label = "#1E1F22";
+        palette = "#FFFFFF";
+        root.style.setProperty("--canvas", canvas);
+        root.style.setProperty("--shape-fill", fill);
+        root.style.setProperty("--icon", stroke);
+        root.style.setProperty("--flow", stroke);
+        root.style.setProperty("--label", label);
+        root.style.setProperty("--palette", palette);
+        root.style.setProperty("--palette-fg", "#1E1F22");
+        root.style.setProperty("--palette-border", "#D3D5DB");
+        root.style.setProperty("--palette-hover", "#EBECF0");
+        root.style.setProperty("--token-sim-on-fill", "rgba(16,208,112,.12)");
+        root.style.setProperty("--token-sim-on-border", "rgba(16,208,112,.55)");
+      }
+      if (t.bg) root.style.setProperty("--bg", t.bg);
+      else root.style.setProperty("--bg", panel);
+      try {
+        var renderer = modeler.get("bpmnRenderer");
+        if (renderer) {
+          renderer.defaultFillColor = fill;
+          renderer.defaultStrokeColor = stroke;
+          renderer.defaultLabelColor = label;
+        }
+      } catch (e) {}
+      try {
+        var registry = modeler.get("elementRegistry");
+        var gfxFactory = modeler.get("graphicsFactory");
+        var canvasSvc = modeler.get("canvas");
+        var rootEl = canvasSvc.getRootElement();
+        registry.forEach(function (el) {
+          if (!el || el === rootEl) return;
+          var gfx = registry.getGraphics(el);
+          if (!gfx) return;
+          var type = el.waypoints ? "connection" : "shape";
+          try { gfxFactory.update(type, el, gfx); } catch (err) {}
+        });
+      } catch (e) {}
+    };
+    (function setupConnectionContextPad() {
+      var lastClick = null;
+      try {
+        var eventBus = modeler.get("eventBus");
+        var canvas = modeler.get("canvas");
+        var contextPad = modeler.get("contextPad");
+        if (!contextPad || typeof contextPad._getPosition !== "function") return;
+
+        function eventToDiagram(e) {
+          if (e && typeof e.x === "number" && typeof e.y === "number" && isFinite(e.x) && isFinite(e.y)) {
+            return { x: e.x, y: e.y };
+          }
+          var oe = e && (e.originalEvent || e);
+          if (!oe || typeof oe.clientX !== "number") return null;
+          var vb = canvas.viewbox();
+          var rect = canvas.getContainer().getBoundingClientRect();
+          return {
+            x: (oe.clientX - rect.left) / vb.scale + vb.x,
+            y: (oe.clientY - rect.top) / vb.scale + vb.y
+          };
+        }
+
+        function rememberClick(e) {
+          var el = e && e.element;
+          if (!el || !el.waypoints || !el.waypoints.length) return;
+          var pt = eventToDiagram(e);
+          if (!pt) return;
+          lastClick = { elementId: el.id, x: pt.x, y: pt.y };
+        }
+
+        eventBus.on("element.mousedown", rememberClick);
+        eventBus.on("element.click", rememberClick);
+
+        function nearestOnPolyline(waypoints, px, py) {
+          var best = null, bestDist = Infinity, bestSeg = null;
+          for (var i = 0; i < waypoints.length - 1; i++) {
+            var a = waypoints[i], b = waypoints[i + 1];
+            var dx = b.x - a.x, dy = b.y - a.y;
+            var len2 = dx * dx + dy * dy;
+            var t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((px - a.x) * dx + (py - a.y) * dy) / len2));
+            var qx = a.x + t * dx, qy = a.y + t * dy;
+            var d = (px - qx) * (px - qx) + (py - qy) * (py - qy);
+            if (d < bestDist) {
+              bestDist = d;
+              best = { x: qx, y: qy };
+              bestSeg = { dx: dx, dy: dy };
+            }
+          }
+          return { point: best, seg: bestSeg };
+        }
+
+        function longestSegmentMid(waypoints) {
+          var bestLen = -1, mid = null, seg = null;
+          for (var i = 0; i < waypoints.length - 1; i++) {
+            var a = waypoints[i], b = waypoints[i + 1];
+            var dx = b.x - a.x, dy = b.y - a.y;
+            var len = Math.hypot(dx, dy);
+            if (len > bestLen) {
+              bestLen = len;
+              mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+              seg = { dx: dx, dy: dy };
+            }
+          }
+          return { point: mid, seg: seg };
+        }
+
+        function labelCenter(target) {
+          var label = target.label || (target.labels && target.labels[0]);
+          if (!label) return null;
+          var x = label.x, y = label.y;
+          if (typeof x !== "number" || typeof y !== "number") return null;
+          var w = label.width || 0, h = label.height || 0;
+          return { x: x + w / 2, y: y + h / 2 };
+        }
+
+        function offsetFromLine(point, seg, target) {
+          var len = Math.hypot(seg.dx, seg.dy) || 1;
+          var nx = -seg.dy / len, ny = seg.dx / len;
+          var OFFSET = 16;
+          var c1 = { x: point.x + nx * OFFSET, y: point.y + ny * OFFSET };
+          var c2 = { x: point.x - nx * OFFSET, y: point.y - ny * OFFSET };
+          var label = labelCenter(target);
+          if (label) {
+            var d1 = (c1.x - label.x) * (c1.x - label.x) + (c1.y - label.y) * (c1.y - label.y);
+            var d2 = (c2.x - label.x) * (c2.x - label.x) + (c2.y - label.y) * (c2.y - label.y);
+            return d1 >= d2 ? c1 : c2;
+          }
+          // Prefer the visually upper side (smaller diagram Y).
+          return c1.y <= c2.y ? c1 : c2;
+        }
+
+        function computeDiagramAnchor(target) {
+          var waypoints = target.waypoints;
+          if (!waypoints || waypoints.length < 2) return null;
+          var hit = null;
+          if (lastClick && lastClick.elementId === target.id) {
+            hit = nearestOnPolyline(waypoints, lastClick.x, lastClick.y);
+          } else {
+            hit = longestSegmentMid(waypoints);
+          }
+          if (!hit || !hit.point || !hit.seg) return null;
+          return offsetFromLine(hit.point, hit.seg, target);
+        }
+
+        function clampPadPosition(left, top, html) {
+          var container = canvas.getContainer();
+          var cw = container.clientWidth || 0;
+          var ch = container.clientHeight || 0;
+          var pw = (html && html.offsetWidth) || 120;
+          var ph = (html && html.offsetHeight) || 40;
+          var M = 8;
+          if (cw > 0) left = Math.max(M, Math.min(Math.max(M, cw - pw - M), left));
+          if (ch > 0) top = Math.max(M, Math.min(Math.max(M, ch - ph - M), top));
+          return { left: left, top: top };
+        }
+
+        var originalGetPosition = contextPad._getPosition.bind(contextPad);
+        contextPad._getPosition = function (target) {
+          try {
+            if (!target || (typeof target === "object" && Array.isArray(target)) || !target.waypoints) {
+              return originalGetPosition(target);
+            }
+            var anchor = computeDiagramAnchor(target);
+            if (!anchor) return originalGetPosition(target);
+            var vb = canvas.viewbox();
+            var left = (anchor.x - vb.x) * vb.scale;
+            var top = (anchor.y - vb.y) * vb.scale;
+            var html = contextPad._current && contextPad._current.html;
+            return clampPadPosition(left, top, html);
+          } catch (err) {
+            return originalGetPosition(target);
+          }
+        };
+
+        // Keep pad next to the diagram-space anchor on zoom/scroll/resize.
+        eventBus.on("canvas.viewbox.changed", function () {
+          try {
+            if (contextPad.isOpen && contextPad.isOpen() && typeof contextPad._updatePosition === "function") {
+              contextPad._updatePosition();
+            }
+          } catch (e) {}
+        });
+        if (window.ResizeObserver) {
+          new ResizeObserver(function () {
+            try {
+              if (contextPad.isOpen && contextPad.isOpen() && typeof contextPad._updatePosition === "function") {
+                contextPad._updatePosition();
+              }
+            } catch (e) {}
+          }).observe(canvas.getContainer());
+        }
+      } catch (e) {}
+    })();
+    (function setupPropsToggle() {
+      var app = document.getElementById("app");
+      var btn = document.getElementById("toggle-props");
+      function apply(collapsed) {
+        app.classList.toggle("props-collapsed", collapsed);
+        btn.textContent = collapsed ? "›" : "‹";
+        btn.title = collapsed ? "Show properties" : "Hide properties";
+        btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+        try { localStorage.setItem("forge-bpmn-props-collapsed", collapsed ? "1" : "0"); } catch (e) {}
+        window.setTimeout(function () {
+          try { modeler.get("canvas").resized(); } catch (e) {}
+        }, 40);
+      }
+      apply((function () {
+        try { return localStorage.getItem("forge-bpmn-props-collapsed") === "1"; } catch (e) { return false; }
+      })());
+      btn.addEventListener("click", function () {
+        apply(!app.classList.contains("props-collapsed"));
+      });
+    })();
+    window.addEventListener("resize", function () {
+      try { modeler.get("canvas").resized(); } catch (e) {}
+    });
+    (function setupTrackpadZoom() {
+      var el = document.getElementById("canvas");
+      document.addEventListener("pointermove", function (e) {
+        window.__pointerX = e.clientX;
+        window.__pointerY = e.clientY;
+      }, true);
+      function zoomTo(scale, cx, cy) {
+        try {
+          var canvas = modeler.get("canvas");
+          var next = Math.min(4, Math.max(0.2, scale));
+          var rect = el.getBoundingClientRect();
+          var x = (typeof cx === "number" && isFinite(cx)) ? cx : (window.__pointerX || (rect.left + rect.width / 2));
+          var y = (typeof cy === "number" && isFinite(cy)) ? cy : (window.__pointerY || (rect.top + rect.height / 2));
+          canvas.zoom(next, { x: x - rect.left, y: y - rect.top });
+        } catch (e) {}
+      }
+      window.__zoomTo = zoomTo;
+      window.__zoomBy = function (factor, x, y) {
+        try {
+          var n = Number(factor);
+          if (!isFinite(n) || n === 0) return;
+          zoomTo(modeler.get("canvas").zoom() * n, x, y);
+        } catch (e) {}
+      };
+      window.addEventListener("wheel", function (e) {
+        var pinch = e.ctrlKey || e.metaKey;
+        if (!pinch) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        var dy = e.deltaY;
+        if (e.deltaMode === 1) dy *= 16;
+        if (e.deltaMode === 2) dy *= window.innerHeight || 800;
+        var dist = Math.sqrt(dy * dy + (e.deltaX || 0) * (e.deltaX || 0)) * (dy >= 0 ? 1 : -1);
+        var step = e.deltaMode === 0 ? 0.015 : 0.24;
+        var factor = Math.exp(-dist * step);
+        if (factor < 0.5) factor = 0.5;
+        if (factor > 2) factor = 2;
+        window.__zoomBy(factor, e.clientX, e.clientY);
+      }, { passive: false, capture: true });
+      var gestureBase = 1;
+      ["gesturestart", "gesturechange", "gestureend"].forEach(function (type) {
+        window.addEventListener(type, function (e) {
+          e.preventDefault();
+          if (type === "gesturestart") {
+            try { gestureBase = modeler.get("canvas").zoom(); } catch (err) { gestureBase = 1; }
+          } else if (type === "gesturechange") {
+            zoomTo(gestureBase * (e.scale || 1), e.clientX, e.clientY);
+          }
+        }, { passive: false, capture: true });
+      });
+      var pinchDist = 0, pinchZoom = 1;
+      window.addEventListener("touchstart", function (e) {
+        if (e.touches.length === 2) {
+          var a = e.touches[0], b = e.touches[1];
+          pinchDist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY) || 1;
+          try { pinchZoom = modeler.get("canvas").zoom(); } catch (err) { pinchZoom = 1; }
+        }
+      }, { passive: true, capture: true });
+      window.addEventListener("touchmove", function (e) {
+        if (e.touches.length !== 2) return;
+        e.preventDefault();
+        var a = e.touches[0], b = e.touches[1];
+        var dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY) || 1;
+        zoomTo(pinchZoom * (dist / pinchDist), (a.clientX + b.clientX) / 2, (a.clientY + b.clientY) / 2);
+      }, { passive: false, capture: true });
+    })();
+    if (window.ResizeObserver) {
+      new ResizeObserver(function () {
+        try { modeler.get("canvas").resized(); } catch (e) {}
+      }).observe(document.getElementById("canvas"));
+    }
+
+    window.__resized = function () {
+      try { modeler.get("canvas").resized(); } catch (e) {}
+    };
+    window.__loadXml = async function (xml) {
+      applying = true;
+      var canvas = modeler.get("canvas");
+      var previous = null;
+      try {
+        var vb = canvas.viewbox();
+        if (vb && vb.width && vb.height) previous = { x: vb.x, y: vb.y, width: vb.width, height: vb.height };
+      } catch (e) {}
+      try {
+        await modeler.importXML(xml);
+        canvas.resized();
+        if (previous) canvas.viewbox(previous);
+        else fit();
+        paintLint(lintBpmnXml(xml));
+      } catch (err) {
+        paintLint(lintBpmnXml(xml));
+      } finally {
+        applying = false;
+      }
+    };
+  </script>
+</body>
+</html>
