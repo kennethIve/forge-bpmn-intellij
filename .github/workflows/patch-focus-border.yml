@@ -1,0 +1,56 @@
+name: patch-focus-border
+on:
+  workflow_dispatch:
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+      - name: Apply focus-border fix to index.html
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          p = Path("src/main/resources/bpmn-editor/index.html")
+          t = p.read_text()
+          old = """    .bio-properties-panel-feel-editor-container:focus-within,
+    .bio-properties-panel-feel-editor-container.active {
+      outline: 1px solid var(--accent) !important;
+      outline-offset: 0 !important;
+      box-shadow: none !important;
+      border-color: var(--accent) !important;
+    }
+"""
+          insert = """    /* Focus: keep a single 1px border (panel-native); recolor to accent, never outline/expand. */
+    .bio-properties-panel-input:focus,
+    .bio-properties-panel-input:focus-within,
+    .bio-properties-panel select:focus,
+    .bio-properties-panel textarea:focus,
+    .bio-properties-panel input:focus {
+      border-color: var(--accent) !important;
+      border-width: 1px !important;
+      outline: none !important;
+      box-shadow: none !important;
+    }
+"""
+          needle = "    .bio-properties-panel-input, .bio-properties-panel select, .bio-properties-panel textarea, .bio-properties-panel input { background: var(--input) !important; color: var(--fg) !important; border-color: var(--border) !important; }\n"
+          if old in t:
+              t = t.replace(old, "")
+          if "Focus: keep a single 1px border" not in t:
+              if needle not in t:
+                  raise SystemExit("insert anchor missing")
+              t = t.replace(needle, needle + insert)
+          p.write_text(t)
+          print("patched ok")
+          PY
+      - name: Commit and push
+        run: |
+          git config user.name "kennethIve"
+          git config user.email "kennethIve@users.noreply.github.com"
+          git add src/main/resources/bpmn-editor/index.html
+          git diff --cached --quiet && echo "no changes" && exit 0
+          git commit -m "fix: drop extra FEEL focus outline from index.html theme"
+          git push origin HEAD:dev
