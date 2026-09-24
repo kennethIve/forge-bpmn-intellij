@@ -8,8 +8,9 @@
   <link rel="stylesheet" href="assets/bpmn-js-token-simulation.css"/>
   <style>
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: var(--bg, #f7f8fa); color: var(--fg, #1e1f22); font: 13px/1.45 "JetBrains Sans", "IBM Plex Sans", "Segoe UI", sans-serif; overscroll-behavior: none; touch-action: none; }
-    :root { --bg:#FFFFFF; --canvas:#F7F8FA; --shape-fill:#FFFFFF; --icon:#1E1F22; --flow:#1E1F22; --label:#1E1F22; --panel:#FFFFFF; --fg:#1E1F22; --muted:#6c707e; --border:#d3d5db; --input:#ffffff; --hover:#ebecf0; --accent:#3574F0; --palette:#FFFFFF; --palette-fg:#1E1F22; --palette-border:#D3D5DB; --palette-hover:#EBECF0; --token-sim-on-fill:rgba(16,208,112,.12); --token-sim-on-border:rgba(16,208,112,.55); --token-simulation-green-base-44:#10d070; --token-simulation-grey-darken-30:var(--fg); --token-simulation-grey-lighten-56:var(--hover); --token-simulation-grey-base-40:var(--muted); --token-simulation-silver-darken-94:var(--palette); --token-simulation-silver-base-97:var(--panel); --token-simulation-white:#ffffff; }
-    html.dark { --bg:#2B2D30; --canvas:#1E1F22; --shape-fill:#2B2D30; --icon:#DFE1E5; --flow:#DFE1E5; --label:#DFE1E5; --panel:#2B2D30; --fg:#DFE1E5; --muted:#9DA0A8; --border:#393B40; --input:#1E1F22; --hover:#3C3F44; --accent:#3574F0; --palette:#2B2D30; --palette-fg:#DFE1E5; --palette-border:#43454A; --palette-hover:#3C3F44; --token-sim-on-fill:rgba(16,208,112,.12); --token-sim-on-border:rgba(16,208,112,.5); --token-simulation-grey-darken-30:#DFE1E5; --token-simulation-grey-lighten-56:#3C3F44; --token-simulation-grey-base-40:#9DA0A8; --token-simulation-silver-darken-94:#3C3F44; --token-simulation-silver-base-97:#2B2D30; }
+    :root { --bg:#FFFFFF; --canvas:#F7F8FA; --shape-fill:#FFFFFF; --icon:#1E1F22; --flow:#1E1F22; --label:#1E1F22; --panel:#FFFFFF; --fg:#1E1F22; --muted:#6c707e; --border:#d3d5db; --input:#ffffff; --hover:#ebecf0; --accent:#3574F0; --caret:#3574F0; --selection:rgba(84,138,247,.30); --active-line:rgba(0,0,0,.035); --palette:#FFFFFF; --palette-fg:#1E1F22; --palette-border:#D3D5DB; --palette-hover:#EBECF0; --token-sim-on-fill:rgba(16,208,112,.12); --token-sim-on-border:rgba(16,208,112,.55); --token-simulation-green-base-44:#10d070; --token-simulation-grey-darken-30:var(--fg); --token-simulation-grey-lighten-56:var(--hover); --token-simulation-grey-base-40:var(--muted); --token-simulation-silver-darken-94:var(--palette); --token-simulation-silver-base-97:var(--panel); --token-simulation-white:#ffffff; }
+    html.dark { --bg:#2B2D30; --canvas:#1E1F22; --shape-fill:#2B2D30; --icon:#DFE1E5; --flow:#DFE1E5; --label:#DFE1E5; --panel:#2B2D30; --fg:#DFE1E5; --muted:#9DA0A8; --border:#393B40; --input:#1E1F22; --hover:#3C3F44; --accent:#3574F0; --caret:#548AF7; --selection:rgba(84,138,247,.30); --active-line:rgba(255,255,255,.04); --palette:#2B2D30; --palette-fg:#DFE1E5; --palette-border:#43454A; --palette-hover:#3C3F44; --token-sim-on-fill:rgba(16,208,112,.12); --token-sim-on-border:rgba(16,208,112,.5); --token-simulation-grey-darken-30:#DFE1E5; --token-simulation-grey-lighten-56:#3C3F44; --token-simulation-grey-base-40:#9DA0A8; --token-simulation-silver-darken-94:#3C3F44; --token-simulation-silver-base-97:#2B2D30; }
+    html.hc { --caret:#FFFFFF; --selection:rgba(84,138,247,.30); --active-line:rgba(255,255,255,.06); }
     #app { position: absolute; inset: 0; display: flex; min-height: 0; min-width: 0; background: var(--bg); }
     #canvas { position: relative; flex: 1; min-width: 0; min-height: 0; background: var(--canvas); touch-action: none; overscroll-behavior: none; }
     #canvas .bjs-container, #canvas .djs-container { position: absolute !important; inset: 0; width: auto !important; height: auto !important; background: var(--canvas) !important; background-image: none !important; }
@@ -22,6 +23,44 @@
     #properties .bio-properties-panel-container, #properties .bio-properties-panel { height: 100%; background: var(--panel) !important; color: var(--fg) !important; }
     .bio-properties-panel-header, .bio-properties-panel-group, .bio-properties-panel-group-header, .bio-properties-panel-scroll-container { background: var(--panel) !important; color: var(--fg) !important; border-color: var(--border) !important; }
     .bio-properties-panel-input, .bio-properties-panel select, .bio-properties-panel textarea, .bio-properties-panel input { background: var(--input) !important; color: var(--fg) !important; border-color: var(--border) !important; }
+    .bio-properties-panel input,
+    .bio-properties-panel textarea,
+    .bio-properties-panel-input,
+    .bio-properties-panel select { caret-color: var(--caret) !important; }
+    .bio-properties-panel-feel-editor-container .cm-cursor,
+    .bio-properties-panel-feel-editor-container .cm-dropCursor {
+      border-left: 2px solid var(--caret) !important;
+      border-left-width: 2px !important;
+      margin-left: 0 !important;
+      opacity: 1 !important;
+    }
+    .bio-properties-panel-feel-editor-container .cm-cursorLayer {
+      animation: none !important;
+    }
+    .bio-properties-panel-feel-editor-container .cm-cursorLayer .cm-cursor {
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
+    .bio-properties-panel-feel-editor-container .cm-selectionBackground,
+    .bio-properties-panel-feel-editor-container .cm-content ::selection,
+    .bio-properties-panel-feel-editor-container .cm-content::-moz-selection {
+      background: var(--selection) !important;
+    }
+    .bio-properties-panel-feel-editor-container .cm-focused .cm-selectionBackground,
+    .bio-properties-panel-feel-editor-container.cm-focused .cm-selectionBackground,
+    .cm-editor.cm-focused .cm-selectionBackground {
+      background: var(--selection) !important;
+    }
+    .bio-properties-panel-feel-editor-container .cm-activeLine {
+      background: var(--active-line) !important;
+    }
+    .bio-properties-panel-feel-editor-container:focus-within,
+    .bio-properties-panel-feel-editor-container.active {
+      outline: 1px solid var(--accent) !important;
+      outline-offset: 0 !important;
+      box-shadow: none !important;
+      border-color: var(--accent) !important;
+    }
     .djs-palette { background: var(--palette) !important; border-color: var(--palette-border) !important; color: var(--palette-fg) !important; }
     .djs-palette .entry { color: var(--palette-fg) !important; fill: var(--palette-fg) !important; }
     .djs-palette .entry:hover { background: var(--palette-hover) !important; }
@@ -650,6 +689,7 @@
       var root = document.documentElement;
       var dark = !!t.dark;
       root.classList.toggle("dark", dark);
+      root.classList.toggle("hc", !!t.hc);
       root.classList.remove("dark-diagram");
       ["bg","panel","fg","muted","border","input","hover","accent"].forEach(function (k) {
         if (t[k]) root.style.setProperty("--" + k, t[k]);

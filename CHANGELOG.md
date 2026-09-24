@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.4]
+
+- FEEL / condition expression editor: visible caret (theme-aware), selection tint, active-line tint, accent focus ring; High Contrast theme flag for caret
+
 ## [0.4.3]
 
 - Plugin Verifier: optional `com.intellij.modules.jcef` now declares `config-file="forge-bpmn-jcef.xml"`
