@@ -1,0 +1,67 @@
+name: restore-index-once
+on:
+  push:
+    branches: [dev]
+    paths:
+      - ".github/workflows/restore-index-once.yml"
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+      - name: Restore index.html from pre-break tip and apply focus-border fix
+        run: |
+          set -euo pipefail
+          git checkout b53509a86824b8235693db437f946bfe11abeea9 -- src/main/resources/bpmn-editor/index.html
+          python3 <<'PY'
+          from pathlib import Path
+          p = Path("src/main/resources/bpmn-editor/index.html")
+          t = p.read_text()
+          old = """    .bio-properties-panel-feel-editor-container:focus-within,
+    .bio-properties-panel-feel-editor-container.active {
+      outline: 1px solid var(--accent) !important;
+      outline-offset: 0 !important;
+      box-shadow: none !important;
+      border-color: var(--accent) !important;
+    }
+"""
+          insert = """    /* Focus: keep a single 1px border (panel-native); recolor to accent, never outline/expand. */
+    .bio-properties-panel-input:focus,
+    .bio-properties-panel-input:focus-within,
+    .bio-properties-panel select:focus,
+    .bio-properties-panel textarea:focus,
+    .bio-properties-panel input:focus {
+      border-color: var(--accent) !important;
+      border-width: 1px !important;
+      outline: none !important;
+      box-shadow: none !important;
+    }
+"""
+          needle = "    .bio-properties-panel-input, .bio-properties-panel select, .bio-properties-panel textarea, .bio-properties-panel input { background: var(--input) !important; color: var(--fg) !important; border-color: var(--border) !important; }\n"
+          if old in t:
+              t = t.replace(old, "")
+          if "Focus: keep a single 1px border" not in t:
+              if needle not in t:
+                  raise SystemExit("insert anchor missing")
+              t = t.replace(needle, needle + insert)
+          p.write_text(t)
+          print("index.html restored and patched", p.stat().st_size)
+          PY
+          # Cleanup probes / this one-shot workflow / bootstrap leftovers
+          rm -f .github/workflows/restore-index-once.yml
+          rm -f src/main/resources/bpmn-editor/assets/_restore_probe.txt
+          rm -f src/main/resources/bpmn-editor/assets/_size_probe.css
+          rm -f src/main/resources/bpmn-editor/assets/_index_part0.txt
+          rm -f src/main/resources/bpmn-editor/assets/_index_part1.txt
+          rm -f src/main/resources/bpmn-editor/assets/_index_part2.txt
+          git config user.name "kennethIve"
+          git config user.email "kennethIve@users.noreply.github.com"
+          git add -A
+          git status --short
+          git commit -m "fix: restore index.html and drop doubled FEEL focus outline"
+          git push origin HEAD:dev
