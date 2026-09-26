@@ -33,14 +33,9 @@ gradle buildPlugin
 
 Output: `build/distributions/`.
 
-## Publish to JetBrains Marketplace
+## JetBrains Marketplace
 
-See **[MARKETPLACE.md](MARKETPLACE.md)**. Short path:
-
-1. Push this project to GitHub.
-2. Add Actions secrets for Marketplace publish (token + signing). See **MARKETPLACE.md**.
-3. Upload the **first** version by hand at [plugins.jetbrains.com/plugin/add](https://plugins.jetbrains.com/plugin/add) (`build/distributions/*.zip`).
-4. Later versions: GitHub → Releases → publish tag `v0.4.0`. The **Publish** workflow runs `gradle publishPlugin`.
+Published releases are maintained privately. Install from the JetBrains Marketplace (search **Forge BPMN**) or from GitHub Releases zips.
 
 ## Identity
 
@@ -48,7 +43,7 @@ See **[MARKETPLACE.md](MARKETPLACE.md)**. Short path:
 | --- | --- |
 | Id | `com.forge.bpmn` |
 | Vendor | Forge |
-| Version | 0.4.3 |
+| Version | 0.4.4 |
 | Folder | `forge-bpmn/` |
 
 ## Project site

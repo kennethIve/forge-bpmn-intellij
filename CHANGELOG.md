@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.4]
+
+- FEEL / condition expression editor: visible caret (theme-aware), selection tint, active-line tint, accent focus ring; High Contrast theme flag for caret
+- FEEL dark/HC: native caret-color on .cm-content; readable token colors; gutter matches input chrome
+- Properties panel: drop doubled FEEL/input focus outline (keep single 1px accent border)
+- Context pad on connections opens near the click (or longest-segment midpoint), stays anchored through zoom/scroll
+
 ## [0.4.3]
 
 - Plugin Verifier: optional `com.intellij.modules.jcef` now declares `config-file="forge-bpmn-jcef.xml"`

@@ -1,5 +1,6 @@
 package com.forge.bpmn
 
+import com.intellij.ide.ui.LafManager
 import com.intellij.ide.ui.LafManagerListener
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.WriteAction
@@ -198,10 +199,21 @@ class BpmnFileEditor(
         return String.format("#%02x%02x%02x", c.red, c.green, c.blue)
     }
 
+    private fun isHighContrastTheme(): Boolean {
+        val lookAndFeel = LafManager.getInstance().currentUIThemeLookAndFeel ?: return false
+        val id = lookAndFeel.id
+        val name = lookAndFeel.name
+        return id.contains("HighContrast", ignoreCase = true) ||
+            id.contains("High_Contrast", ignoreCase = true) ||
+            name.contains("High contrast", ignoreCase = true) ||
+            name.contains("HighContrast", ignoreCase = true)
+    }
+
     private fun applyTheme() {
         val b = browser ?: return
         if (!loaded) return
         val dark = !JBColor.isBright()
+        val hc = isHighContrastTheme()
         val scheme = EditorColorsManager.getInstance().globalScheme
         // Fixed BPMN tokens so Light IDE never keeps a charcoal canvas/shapes.
         val canvas = if (dark) "#1E1F22" else "#F7F8FA"
@@ -216,6 +228,7 @@ class BpmnFileEditor(
         b.component.background = JBColor.PanelBackground
         b.cefBrowser.executeJavaScript(
             "window.__applyTheme && window.__applyTheme({dark:" + dark +
+                ",hc:" + hc +
                 ",bg:" + jsString(panelBg) +
                 ",canvas:" + jsString(canvas) +
                 ",panel:" + jsString(panelBg) +

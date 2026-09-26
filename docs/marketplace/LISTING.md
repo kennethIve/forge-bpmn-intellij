@@ -2,7 +2,7 @@
 
 **Name:** Forge BPMN  
 **Vendor:** Forge  
-**Id:** `com.forge.bpmn` · v0.4.3
+**Id:** `com.forge.bpmn` · v0.4.4
 
 
 ## Short description (plugin.xml / Marketplace blurb)

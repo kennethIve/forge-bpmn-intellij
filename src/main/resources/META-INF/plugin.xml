@@ -2,7 +2,7 @@
 <idea-plugin>
   <id>com.forge.bpmn</id>
   <name>Forge BPMN</name>
-  <version>0.4.3</version>
+  <version>0.4.4</version>
   <vendor url="https://github.com/kennethIve/forge-bpmn-intellij">Forge</vendor>
 
   <description><![CDATA[
@@ -18,6 +18,7 @@
 
   <change-notes><![CDATA[
     <ul>
+      <li>0.4.4: FEEL native caret color + dark/HC token contrast; connection context pad near click.</li>
       <li>0.4.3: Optional JCEF dependency declares config-file (Plugin Verifier).</li>
       <li>0.4.2: IntelliJ IDEA 2025.3 Community, Plugin Verifier pass, Camunda-style element names.</li>
       <li>0.4.1: Install on IntelliJ IDEA 2025.3 Community — JCEF is optional; since-build 253.</li>
