@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.5]
+
+- Extract `feel-focus-fix.css` into the IDE temp assets (was @imported but never copied)
+- FEEL CodeMirror: padding-right so long first lines clear the pop-out icon
+- Marketplace description: keep UTF-8 HTML from plugin.xml (no gradle.properties dash mojibake)
+- Site copy: IntelliJ IDEA 2025.3+ / Java 21 (match README/gradle)
+
 ## [0.4.4]
 
 - FEEL / condition expression editor: visible caret (theme-aware), selection tint, active-line tint, accent focus ring; High Contrast theme flag for caret
