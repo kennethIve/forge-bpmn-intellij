@@ -18,7 +18,7 @@
 
   <change-notes><![CDATA[
     <ul>
-      <li>0.4.5: Extract feel-focus-fix.css; FEEL pop-out padding; clean Marketplace description; site 2025.3+/Java 21.</li>
+      <li>0.4.5: Extract feel-focus-fix.css; FEEL pop-out padding; clean Marketplace description; site 2025.3+/Java 21; canvas Ctrl+Z/Y undo via commandStack.</li>
       <li>0.4.4: FEEL native caret color + dark/HC token contrast; connection context pad near click.</li>
       <li>0.4.3: Optional JCEF dependency declares config-file (Plugin Verifier).</li>
       <li>0.4.2: IntelliJ IDEA 2025.3 Community, Plugin Verifier pass, Camunda-style element names.</li>
