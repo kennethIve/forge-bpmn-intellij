@@ -23,7 +23,11 @@ import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
+import org.cef.handler.CefKeyboardHandler
+import org.cef.handler.CefKeyboardHandlerAdapter
 import org.cef.handler.CefLoadHandlerAdapter
+import org.cef.misc.BoolRef
+import org.cef.misc.EventFlags
 import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Component
@@ -88,6 +92,32 @@ class BpmnFileEditor(
                         pushXml()
                         attachCanvasZoom(b)
                     }
+                }
+            }, b.cefBrowser)
+            b.jbCefClient.addKeyboardHandler(object : CefKeyboardHandlerAdapter() {
+                override fun onPreKeyEvent(
+                    browser: CefBrowser?,
+                    event: CefKeyboardHandler.CefKeyEvent?,
+                    isKeyboardShortcut: BoolRef?,
+                ): Boolean {
+                    if (browser == null || event == null) return false
+                    if (event.type != CefKeyboardHandler.CefKeyEvent.EventType.KEYEVENT_KEYDOWN) return false
+                    val control = (event.modifiers and EventFlags.EVENTFLAG_CONTROL_DOWN) != 0
+                    val meta = (event.modifiers and EventFlags.EVENTFLAG_COMMAND_DOWN) != 0
+                    val shift = (event.modifiers and EventFlags.EVENTFLAG_SHIFT_DOWN) != 0
+                    val alt = (event.modifiers and EventFlags.EVENTFLAG_ALT_DOWN) != 0
+                    if (alt || !(control || meta)) return false
+                    val code = event.windows_key_code
+                    val isZ = code == 'Z'.code || code == 'z'.code
+                    val isY = code == 'Y'.code || code == 'y'.code
+                    if (!isZ && !isY) return false
+                    // Let CEF/browser undo text in FEEL, Name, and other inputs.
+                    if (event.focus_on_editable_field) return false
+                    val redo = isY || (isZ && shift)
+                    val call = if (redo) "window.__diagramRedo && window.__diagramRedo();" else "window.__diagramUndo && window.__diagramUndo();"
+                    browser.executeJavaScript(call, browser.url, 0)
+                    isKeyboardShortcut?.set(true)
+                    return true
                 }
             }, b.cefBrowser)
             FileDocumentManager.getInstance().getDocument(file)?.addDocumentListener(documentListener, this)
