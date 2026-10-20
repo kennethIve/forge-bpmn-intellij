@@ -7,7 +7,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.WriteAction
-import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
@@ -177,7 +177,7 @@ class BpmnExplorer(
             )
             return
         }
-        FileEditorManager.getInstance(project).openFile(file, true)
+        OpenFileDescriptor(project, file).navigate(true)
         reload()
     }
 
@@ -218,7 +218,7 @@ class BpmnExplorer(
         val data = node.userObject as? BpmnNode ?: return
         val file = data.file ?: return
         if (data.kind != BpmnNode.Kind.FILE) return
-        FileEditorManager.getInstance(project).openFile(file, true)
+        OpenFileDescriptor(project, file).navigate(true)
     }
 
     private fun reload() {

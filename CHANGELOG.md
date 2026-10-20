@@ -2,6 +2,7 @@
 
 ## [0.4.5]
 
+- Replace deprecated `FileEditorManager.openFile(VirtualFile, boolean)` with `OpenFileDescriptor.navigate` (Plugin Verifier)
 - Extract `feel-focus-fix.css` into the IDE temp assets (was @imported but never copied)
 - FEEL CodeMirror: padding-right so long first lines clear the pop-out icon
 - Marketplace description: keep UTF-8 HTML from plugin.xml (no gradle.properties dash mojibake)
