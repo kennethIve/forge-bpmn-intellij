@@ -4,7 +4,8 @@
 
 - Lint findings appear in the IDEA **Problems** tool window via `BpmnAnnotator` (works without a module / fixture opens; full-sentence messages; error vs warning). `BpmnInspection` kept in sources but unregistered to avoid duplicate rows
 - Problems / intention **Select on diagram** opens the BPMN tab and selects the element (`window.__selectElement` JS bridge)
-- Problems row click selects on diagram: caret on an `id` attribute syncs canvas selection; focus-then-caret (typical Problems navigate) also switches to the diagram tab
+- Problems **single-click** selects on diagram (Problems tree selection hook); F4 / double-click / Autoscroll still sync via XML caret on `id`
+- Sequence-flow lint: blank **or** unresolved `sourceRef`/`targetRef` (dangling ids) → error `Sequence flow is missing source or target.`
 - Canvas lint corner badges: error `#E5484D` / warn `#EF9F27`, 6px dots (top-right); click badge selects the element; process-level ERROR badges fall back to the first shape child so red shows on fixtures like missing-start-end
 - Dirty / external file change: dialog title **File changed on disk**, primary **Reload**, secondary **Keep mine**
 - Replace deprecated `FileEditorManager.openFile(VirtualFile, boolean)` with `OpenFileDescriptor.navigate` (Plugin Verifier)

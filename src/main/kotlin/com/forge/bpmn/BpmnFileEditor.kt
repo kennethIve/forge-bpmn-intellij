@@ -74,6 +74,7 @@ class BpmnFileEditor(
     }
 
     init {
+        BpmnProblemsSelectionHook.install(project)
         panel.background = JBColor.PanelBackground
         if (!JBCefApp.isSupported()) {
             panel.add(JLabel("JCEF is required for the BPMN diagram editor.", SwingConstants.CENTER), BorderLayout.CENTER)

@@ -18,7 +18,7 @@
 
   <change-notes><![CDATA[
     <ul>
-      <li>0.4.5: Lint in IDEA Problems (click/select on diagram); node error/warn badges; Dirty Reload dialog; feel-focus CSS; FEEL padding; Ctrl+Z/Y; openFile→navigate.</li>
+      <li>0.4.5: Lint in IDEA Problems (single-click selects diagram; dangling flow refs); node error/warn badges; Dirty Reload dialog; feel-focus CSS; FEEL padding; Ctrl+Z/Y; openFile→navigate.</li>
       <li>0.4.4: FEEL native caret color + dark/HC token contrast; connection context pad near click.</li>
       <li>0.4.3: Optional JCEF dependency declares config-file (Plugin Verifier).</li>
       <li>0.4.2: IntelliJ IDEA 2025.3 Community, Plugin Verifier pass, Camunda-style element names.</li>
