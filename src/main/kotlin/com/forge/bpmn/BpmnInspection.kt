@@ -9,6 +9,11 @@ import com.intellij.psi.xml.XmlAttribute
 import com.intellij.psi.xml.XmlFile
 import com.intellij.psi.xml.XmlTag
 
+/**
+ * Batch-style BPMN lint for [LocalInspectionTool] / Inspect Code.
+ * Not registered in plugin.xml while [BpmnAnnotator] owns the live Problems feed
+ * (Annotator works without modules; registering both duplicates rows).
+ */
 class BpmnInspection : LocalInspectionTool() {
     override fun getDisplayName(): String = "BPMN syntax"
 

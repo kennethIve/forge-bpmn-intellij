@@ -9,9 +9,9 @@ import com.intellij.psi.xml.XmlFile
 import com.intellij.psi.xml.XmlTag
 
 /**
- * In-editor XML underlines for BPMN lint. Problems tool window is fed primarily by
- * [BpmnInspection] (with Select-on-diagram fix); Annotator stays for immediate gutter/underline
- * while typing. Severity matches Inspection so messages stay consistent.
+ * On-the-fly BPMN lint → editor underlines + Problems tool window.
+ * Prefer this over [BpmnInspection] for live Problems: Annotator runs without a
+ * project module (fixture / light opens). Do not register both extensions.
  */
 class BpmnAnnotator : Annotator {
     override fun annotate(element: PsiElement, holder: AnnotationHolder) {
