@@ -2,10 +2,10 @@
 
 ## [0.4.5]
 
-- Lint findings appear in the IDEA **Problems** tool window via `BpmnInspection` (element-level descriptors on `id` attributes; full-sentence messages; error vs warning highlight)
+- Lint findings appear in the IDEA **Problems** tool window via `BpmnAnnotator` (works without a module / fixture opens; full-sentence messages; error vs warning). `BpmnInspection` kept in sources but unregistered to avoid duplicate rows
 - Problems / intention **Select on diagram** opens the BPMN tab and selects the element (`window.__selectElement` JS bridge)
-- XML caret on an `id` attribute syncs selection to the canvas (so Problems navigation that lands on the id also selects the shape)
-- Canvas lint corner badges: error `#E5484D` / warn `#EF9F27`, 6px dots (top-right); click badge selects the element
+- Problems row click selects on diagram: caret on an `id` attribute syncs canvas selection; focus-then-caret (typical Problems navigate) also switches to the diagram tab
+- Canvas lint corner badges: error `#E5484D` / warn `#EF9F27`, 6px dots (top-right); click badge selects the element; process-level ERROR badges fall back to the first shape child so red shows on fixtures like missing-start-end
 - Dirty / external file change: dialog title **File changed on disk**, primary **Reload**, secondary **Keep mine**
 - Replace deprecated `FileEditorManager.openFile(VirtualFile, boolean)` with `OpenFileDescriptor.navigate` (Plugin Verifier)
 - Extract `feel-focus-fix.css` into the IDE temp assets (was @imported but never copied)

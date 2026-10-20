@@ -339,14 +339,42 @@
       } catch (e) {}
     }
     window.__selectElement = selectElement;
+    /** Process / root ids have no corner glyph — pin badge to first shape child so ERROR shows red. */
+    function badgeTargetId(elementId) {
+      try {
+        var registry = modeler.get("elementRegistry");
+        var canvas = modeler.get("canvas");
+        var el = registry.get(elementId);
+        if (!el) return null;
+        var root = canvas.getRootElement();
+        var bo = el.businessObject;
+        var isProcessLike = el === root || (bo && (bo.$type === "bpmn:Process" || bo.$type === "bpmn:Collaboration" || bo.$type === "bpmn:Participant"));
+        if (!isProcessLike) return elementId;
+        var kids = el.children || [];
+        for (var i = 0; i < kids.length; i++) {
+          if (kids[i].waypoints) continue;
+          if (typeof kids[i].width === "number") return kids[i].id;
+        }
+        for (var j = 0; j < kids.length; j++) {
+          if (kids[j] && kids[j].id) return kids[j].id;
+        }
+        return null;
+      } catch (e) {
+        return elementId;
+      }
+    }
     function paintLint(issues) {
       var overlays = modeler.get("overlays");
       overlays.remove({ type: "lint" });
       var byId = {};
       (issues || []).forEach(function (issue) {
         if (!issue || !issue.elementId) return;
-        var prev = byId[issue.elementId];
-        if (!prev || (issue.level === "error" && prev.level !== "error")) byId[issue.elementId] = issue;
+        var target = badgeTargetId(issue.elementId);
+        if (!target) return;
+        var prev = byId[target];
+        if (!prev || (issue.level === "error" && prev.level !== "error")) {
+          byId[target] = { level: issue.level, message: issue.message, elementId: target };
+        }
       });
       Object.keys(byId).forEach(function (id) {
         var issue = byId[id];
