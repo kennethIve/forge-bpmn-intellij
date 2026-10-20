@@ -327,16 +327,31 @@
     }, 0);
     var applying = false;
     var simulating = false;
+    var lastAppliedXml = null;
     modeler.on("tokenSimulation.toggleMode", function (e) { simulating = !!(e && e.active); document.getElementById("app").classList.toggle("simulating", simulating); });
-    function selectElement(id) {
-      if (!id) return;
+    var pendingSelect = null;
+    function selectElement(id, opts) {
+      if (!id) return false;
+      opts = opts || {};
+      // Diagram not imported yet — queue until __loadXml finishes.
+      if (lastAppliedXml == null) {
+        pendingSelect = { id: id, fallback: !!opts.fallback };
+        return false;
+      }
       try {
         var registry = modeler.get("elementRegistry");
         var el = registry.get(id);
-        if (!el) return;
+        if (!el) {
+          if (opts.fallback && window.__onElementMissing) window.__onElementMissing(id);
+          return false;
+        }
         modeler.get("selection").select(el);
         try { modeler.get("canvas").scrollToElement(el); } catch (e1) {}
-      } catch (e) {}
+        return true;
+      } catch (e) {
+        if (opts.fallback && window.__onElementMissing) window.__onElementMissing(id);
+        return false;
+      }
     }
     window.__selectElement = selectElement;
     /** Process / root ids have no corner glyph — pin badge to first shape child so ERROR shows red. */
@@ -387,13 +402,33 @@
       });
     }
     var persistTimer = null;
-    var lastAppliedXml = null;
+    // Only write XML back after a real user edit. Import / post-import repair
+    // must not autosave a cleaned model over fixtures (dangling refs, edge DI).
+    var userDirty = false;
+    function clearPersistTimer() {
+      if (persistTimer) { window.clearTimeout(persistTimer); persistTimer = null; }
+    }
+    function clearCommandStackQuiet() {
+      try { modeler.get("commandStack").clear(); } catch (e) {}
+    }
     async function flushPersist() {
-      if (applying || simulating) return;
+      if (applying || simulating || !userDirty) return;
       try { var result = await modeler.saveXML({ format: true }); lastAppliedXml = result.xml; paintLint(lintBpmnXml(result.xml)); if (window.__onXmlChange) window.__onXmlChange(result.xml); } catch (err) {}
     }
-    function persist() { if (applying || simulating) return; if (persistTimer) window.clearTimeout(persistTimer); persistTimer = window.setTimeout(flushPersist, 180); }
-    modeler.on("commandStack.changed", persist);
+    function persist() {
+      if (applying || simulating || !userDirty) return;
+      clearPersistTimer();
+      persistTimer = window.setTimeout(flushPersist, 180);
+    }
+    modeler.on("commandStack.changed", function () {
+      if (applying || simulating) return;
+      try {
+        var stack = modeler.get("commandStack");
+        if (!stack || !stack.canUndo || !stack.canUndo()) return;
+      } catch (e) { return; }
+      userDirty = true;
+      persist();
+    });
     function isEditableTarget(el) {
       var node = el;
       while (node && node !== document) {
@@ -535,11 +570,34 @@
     window.__loadXml = async function (xml, force) {
       if (xml == null) return;
       if (!force && lastAppliedXml !== null && xml === lastAppliedXml) return;
-      applying = true; var canvas = modeler.get("canvas"); var previous = null;
+      applying = true;
+      userDirty = false;
+      clearPersistTimer();
+      var canvas = modeler.get("canvas"); var previous = null;
       try { var vb = canvas.viewbox(); if (vb && vb.width && vb.height) previous = { x: vb.x, y: vb.y, width: vb.width, height: vb.height }; } catch (e) {}
       try { await modeler.importXML(xml); lastAppliedXml = xml; canvas.resized(); if (previous) canvas.viewbox(previous); else fit(); paintLint(lintBpmnXml(xml)); }
       catch (err) { paintLint(lintBpmnXml(xml)); }
-      finally { applying = false; }
+      finally {
+        applying = false;
+        userDirty = false;
+        clearPersistTimer();
+        // Drop import / repair commands so they cannot flush a cleaned model to disk.
+        clearCommandStackQuiet();
+        window.setTimeout(function () {
+          clearPersistTimer();
+          userDirty = false;
+          clearCommandStackQuiet();
+          if (pendingSelect) {
+            var p = pendingSelect; pendingSelect = null;
+            selectElement(p.id, { fallback: p.fallback });
+          }
+        }, 0);
+        window.setTimeout(function () {
+          clearPersistTimer();
+          userDirty = false;
+          clearCommandStackQuiet();
+        }, 300);
+      }
     };
   </script>
 </body>
