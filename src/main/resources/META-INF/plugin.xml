@@ -18,7 +18,7 @@
 
   <change-notes><![CDATA[
     <ul>
-      <li>0.4.5: Extract feel-focus-fix.css; FEEL pop-out padding; clean Marketplace description; site 2025.3+/Java 21; canvas Ctrl+Z/Y undo via commandStack.</li>
+      <li>0.4.5: Lint in IDEA Problems (click/select on diagram); node error/warn badges; Dirty Reload dialog; feel-focus CSS; FEEL padding; Ctrl+Z/Y; openFile→navigate.</li>
       <li>0.4.4: FEEL native caret color + dark/HC token contrast; connection context pad near click.</li>
       <li>0.4.3: Optional JCEF dependency declares config-file (Plugin Verifier).</li>
       <li>0.4.2: IntelliJ IDEA 2025.3 Community, Plugin Verifier pass, Camunda-style element names.</li>
@@ -52,7 +52,7 @@
                 doNotActivateOnStart="true"
                 icon="/META-INF/bpmnFileIcon.svg"
                 factoryClass="com.forge.bpmn.BpmnToolWindowFactory"/>
-    <annotator language="XML" implementationClass="com.forge.bpmn.BpmnAnnotator"/>
+    <!-- Annotator kept in sources for optional re-enable; Inspection owns Problems + XML highlights to avoid duplicates. -->
     <localInspection language="XML"
                      shortName="BpmnSyntax"
                      displayName="BPMN syntax"

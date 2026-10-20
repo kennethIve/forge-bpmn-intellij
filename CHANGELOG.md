@@ -2,12 +2,18 @@
 
 ## [0.4.5]
 
+- Lint findings appear in the IDEA **Problems** tool window via `BpmnInspection` (element-level descriptors on `id` attributes; full-sentence messages; error vs warning highlight)
+- Problems / intention **Select on diagram** opens the BPMN tab and selects the element (`window.__selectElement` JS bridge)
+- XML caret on an `id` attribute syncs selection to the canvas (so Problems navigation that lands on the id also selects the shape)
+- Canvas lint corner badges: error `#E5484D` / warn `#EF9F27`, 6px dots (top-right); click badge selects the element
+- Dirty / external file change: dialog title **File changed on disk**, primary **Reload**, secondary **Keep mine**
 - Replace deprecated `FileEditorManager.openFile(VirtualFile, boolean)` with `OpenFileDescriptor.navigate` (Plugin Verifier)
 - Extract `feel-focus-fix.css` into the IDE temp assets (was @imported but never copied)
 - FEEL CodeMirror: padding-right so long first lines clear the pop-out icon
 - Marketplace description: keep UTF-8 HTML from plugin.xml (no gradle.properties dash mojibake)
 - Site copy: IntelliJ IDEA 2025.3+ / Java 21 (match README/gradle)
 - Diagram Ctrl+Z / Ctrl+Y (and Cmd): undo/redo via bpmn-js commandStack when focus is on the canvas; text/FEEL fields keep their own undo; skip no-op XML reload that wiped history
+
 
 ## [0.4.4]
 

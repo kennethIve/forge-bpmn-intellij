@@ -43,6 +43,11 @@ import javax.swing.JPanel
 import javax.swing.SwingConstants
 import javax.swing.SwingUtilities
 import kotlin.math.abs
+import com.intellij.openapi.vfs.newvfs.events.VFileEvent
+import com.intellij.openapi.vfs.newvfs.events.VFileContentChangeEvent
+import com.intellij.openapi.vfs.newvfs.BulkFileListener
+import com.intellij.openapi.vfs.VirtualFileManager
+import com.intellij.openapi.ui.Messages
 
 class BpmnFileEditor(
     private val project: Project,
@@ -53,12 +58,18 @@ class BpmnFileEditor(
     private var applyingFromJs = false
     private var loaded = false
     private var diagramActive = true
+    private var askingReload = false
+    private var expectExternalChange = false
     private val themeConnection = project.messageBus.connect()
     private val documentListener = object : DocumentListener {
         override fun documentChanged(event: DocumentEvent) {
-            if (!applyingFromJs && loaded && diagramActive) {
-                SwingUtilities.invokeLater { pushXml() }
+            if (applyingFromJs || !loaded || !diagramActive) return
+            if (expectExternalChange) {
+                expectExternalChange = false
+                SwingUtilities.invokeLater { askReloadFromDisk() }
+                return
             }
+            SwingUtilities.invokeLater { pushXml() }
         }
     }
 
@@ -131,6 +142,15 @@ class BpmnFileEditor(
             themeConnection.subscribe(LafManagerListener.TOPIC, LafManagerListener {
                 SwingUtilities.invokeLater { applyTheme() }
             })
+            themeConnection.subscribe(VirtualFileManager.VFS_CHANGES, object : BulkFileListener {
+                override fun after(events: List<VFileEvent>) {
+                    for (event in events) {
+                        if (event is VFileContentChangeEvent && event.file == file && !applyingFromJs) {
+                            expectExternalChange = true
+                        }
+                    }
+                }
+            })
         }
     }
 
@@ -194,16 +214,6 @@ class BpmnFileEditor(
         return sb.toString()
     }
 
-    private fun pushXml() {
-        val b = browser ?: return
-        if (!loaded) return
-        val xml = String(file.contentsToByteArray(), Charsets.UTF_8)
-        b.cefBrowser.executeJavaScript(
-            "window.__loadXml && window.__loadXml(" + jsString(xml) + ");",
-            b.cefBrowser.url,
-            0,
-        )
-    }
 
     private fun notifyResized() {
         val b = browser ?: return
@@ -274,13 +284,65 @@ class BpmnFileEditor(
         )
     }
 
+    fun selectElement(elementId: String) {
+        val b = browser ?: return
+        if (!loaded || elementId.isBlank()) return
+        b.cefBrowser.executeJavaScript(
+            "window.__selectElement && window.__selectElement(" + jsString(elementId) + ");",
+            b.cefBrowser.url,
+            0,
+        )
+    }
+
+    private fun askReloadFromDisk() {
+        if (!loaded || askingReload || !file.isValid) return
+        askingReload = true
+        try {
+            val choice = Messages.showDialog(
+                project,
+                "This BPMN file was changed outside the editor. Reload the diagram from disk, or keep your version?",
+                "File changed on disk",
+                arrayOf("Reload", "Keep mine"),
+                0,
+                Messages.getQuestionIcon(),
+            )
+            when (choice) {
+                0 -> reloadFromFile()
+                1 -> {
+                    // Keep canvas XML: re-export from JS onto the document.
+                    val b = browser ?: return
+                    b.cefBrowser.executeJavaScript(
+                        "(async function(){ try { var r = await window.modeler.saveXML({format:true}); if (window.__onXmlChange) window.__onXmlChange(r.xml); } catch(e) {} })();",
+                        b.cefBrowser.url,
+                        0,
+                    )
+                }
+            }
+        } finally {
+            askingReload = false
+        }
+    }
+
     fun setDiagramActive(value: Boolean) {
         diagramActive = value
         if (value) SwingUtilities.invokeLater { pushXml() }
     }
 
     fun reloadFromFile() {
-        pushXml()
+        // Force JS re-import so disk changes apply even when XML text matches a stale cache.
+        pushXml(force = true)
+    }
+
+    private fun pushXml(force: Boolean = false) {
+        val b = browser ?: return
+        if (!loaded) return
+        val xml = String(file.contentsToByteArray(), Charsets.UTF_8)
+        val call = if (force) {
+            "window.__loadXml && window.__loadXml(" + jsString(xml) + ", true);"
+        } else {
+            "window.__loadXml && window.__loadXml(" + jsString(xml) + ");"
+        }
+        b.cefBrowser.executeJavaScript(call, b.cefBrowser.url, 0)
     }
 
     override fun getComponent(): JComponent = panel
