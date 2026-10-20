@@ -2,6 +2,7 @@
 
 ## [0.4.5]
 
+- Fix Problems row click after XML navigate: drop the “focus must be in Problems tree” gate — mark mouse-presses on the tree via `AWTEventListener` so a single click still moves the caret when focus is on XML; keep `ReadAction` wrappers and force-caret on `openXmlAtElementId`
 - Fix consecutive Problems clicks on dangling (no-shape) flows: always force XML caret to the new element `id` even when the XML tab is already focused; wrap PSI reads (`syncSelectionFromCaret` / `resolveElementId` / `findIdAttributeOffset`) in `ReadAction` to stop the IDE error toast
 - No-shape fallback: Problems / Select on diagram / navigator — if the `elementId` has no bpmn-js shape (e.g. dangling `Flow_Broken` / `Flow_Nowhere`), switch to the **XML** tab and put the caret on that element’s `id` (no fake bendpoints); shapes still select on the BPMN canvas
 - Stop fixture wipe on open: diagram import / post-import repair no longer autosaves a cleaned model back to disk — only real user edits (`commandStack` after import) call `__onXmlChange`; `examples/fixtures/*.bpmn` survive open → BPMN/XML switch → close with no edits
