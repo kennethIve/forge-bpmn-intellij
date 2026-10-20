@@ -14,11 +14,13 @@ import javax.swing.SwingUtilities
 
 /**
  * XML tab wrapper. Caret on an element `id` attribute selects that node on the diagram
- * canvas so Problems-row navigation (which lands on the id attr) also selects the shape.
+ * canvas so F4 / double-click Problems navigation (which lands on the id attr) also
+ * selects the shape.
  *
- * If the XML editor gained focus immediately before the caret move (typical Problems /
- * Navigate click), switch to the diagram tab as well. Pure caret moves while already
- * editing XML only update canvas selection — no tab steal.
+ * Single-click Problems selection is handled by [BpmnProblemsSelectionHook] (tree focus).
+ * If the XML editor gained focus immediately before the caret move (Autoscroll / F4),
+ * switch to the diagram tab as well. Pure caret moves while already editing XML only
+ * update canvas selection — no tab steal.
  */
 class BpmnXmlEditor(
     private val file: VirtualFile,
@@ -28,6 +30,8 @@ class BpmnXmlEditor(
     private var focusedAtMs: Long = 0L
 
     init {
+        val project = delegate.editor.project
+        if (project != null) BpmnProblemsSelectionHook.install(project)
         val editor = delegate.editor
         editor.contentComponent.addFocusListener(object : FocusAdapter() {
             override fun focusGained(e: FocusEvent?) {
