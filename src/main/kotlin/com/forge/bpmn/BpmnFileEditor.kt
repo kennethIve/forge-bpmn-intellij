@@ -57,6 +57,8 @@ class BpmnFileEditor(
     private var browser: JBCefBrowser? = null
     private var applyingFromJs = false
     private var loaded = false
+    private var pendingSelectId: String? = null
+    private var pendingSelectFallback = false
     private var diagramActive = true
     private var askingReload = false
     private var expectExternalChange = false
@@ -91,18 +93,31 @@ class BpmnFileEditor(
                 }
                 null
             }
+            val missingQuery = JBCefJSQuery.create(b as JBCefBrowserBase)
+            Disposer.register(b, missingQuery)
+            missingQuery.addHandler { payload ->
+                val id = decodeXmlPayload(payload).trim().trim('"')
+                onEdt {
+                    BpmnDiagramNavigator.openXmlAtElementId(project, file, id)
+                }
+                null
+            }
             b.jbCefClient.addLoadHandler(object : CefLoadHandlerAdapter() {
                 override fun onLoadEnd(br: CefBrowser?, frame: CefFrame?, status: Int) {
                     if (frame == null || !frame.isMain) return
                     loaded = true
                     val inject = "window.__onXmlChange = function(xml) { " +
                         query.inject("JSON.stringify(xml)") +
+                        " };" +
+                        "window.__onElementMissing = function(id) { " +
+                        missingQuery.inject("JSON.stringify(id)") +
                         " };"
                     br?.executeJavaScript(inject, br.url, 0)
                     SwingUtilities.invokeLater {
                         applyTheme()
                         pushXml()
                         attachCanvasZoom(b)
+                        flushPendingSelect()
                     }
                 }
             }, b.cefBrowser)
@@ -285,14 +300,35 @@ class BpmnFileEditor(
         )
     }
 
-    fun selectElement(elementId: String) {
+    fun selectElement(elementId: String, fallbackToXml: Boolean = false) {
         val b = browser ?: return
-        if (!loaded || elementId.isBlank()) return
+        if (elementId.isBlank()) return
+        if (!loaded) {
+            pendingSelectId = elementId
+            pendingSelectFallback = fallbackToXml
+            return
+        }
+        val opts = if (fallbackToXml) "{fallback:true}" else "{fallback:false}"
         b.cefBrowser.executeJavaScript(
-            "window.__selectElement && window.__selectElement(" + jsString(elementId) + ");",
+            "window.__selectElement && window.__selectElement(" + jsString(elementId) + "," + opts + ");",
             b.cefBrowser.url,
             0,
         )
+    }
+
+    private fun flushPendingSelect() {
+        val id = pendingSelectId ?: return
+        pendingSelectId = null
+        val fallback = pendingSelectFallback
+        // __loadXml is async in JS; give import a moment before select/fallback.
+        SwingUtilities.invokeLater {
+            javax.swing.Timer(350) {
+                selectElement(id, fallback)
+            }.apply {
+                isRepeats = false
+                start()
+            }
+        }
     }
 
     private fun askReloadFromDisk() {

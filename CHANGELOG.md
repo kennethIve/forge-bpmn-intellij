@@ -2,6 +2,8 @@
 
 ## [0.4.5]
 
+- No-shape fallback: Problems / Select on diagram / navigator — if the `elementId` has no bpmn-js shape (e.g. dangling `Flow_Broken` / `Flow_Nowhere`), switch to the **XML** tab and put the caret on that element’s `id` (no fake bendpoints); shapes still select on the BPMN canvas
+- Stop fixture wipe on open: diagram import / post-import repair no longer autosaves a cleaned model back to disk — only real user edits (`commandStack` after import) call `__onXmlChange`; `examples/fixtures/*.bpmn` survive open → BPMN/XML switch → close with no edits
 - Lint findings appear in the IDEA **Problems** tool window via `BpmnAnnotator` (works without a module / fixture opens; full-sentence messages; error vs warning). `BpmnInspection` kept in sources but unregistered to avoid duplicate rows
 - Problems / intention **Select on diagram** opens the BPMN tab and selects the element (`window.__selectElement` JS bridge)
 - Problems **single-click** selects on diagram (Problems tree selection hook); F4 / double-click / Autoscroll still sync via XML caret on `id`

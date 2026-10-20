@@ -54,6 +54,8 @@ class BpmnXmlEditor(
         val id = resolveElementId(el) ?: return
         val fromNavigate = System.currentTimeMillis() - focusedAtMs < 300
         if (fromNavigate) {
+            // Avoid loop when no-shape fallback just placed the caret on XML.
+            if (BpmnDiagramNavigator.isCaretNavigateSuppressed()) return
             BpmnDiagramNavigator.select(project, file, id)
         } else {
             for (fe in com.intellij.openapi.fileEditor.FileEditorManager.getInstance(project).getEditors(file)) {
