@@ -5,6 +5,7 @@ import com.intellij.analysis.problemsView.toolWindow.ProblemsView
 import com.intellij.analysis.problemsView.toolWindow.ProblemsViewPanel
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
+import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
@@ -113,10 +114,13 @@ object BpmnProblemsSelectionHook {
         val lineStart = document.getLineStartOffset(line)
         val lineEnd = document.getLineEndOffset(line)
         val offset = (lineStart + column.coerceAtLeast(0)).coerceIn(lineStart, lineEnd)
-        val psiFile = PsiManager.getInstance(project).findFile(file) ?: return null
+        // commitDocument may need write access — keep it outside ReadAction.
         PsiDocumentManager.getInstance(project).commitDocument(document)
-        val el = psiFile.findElementAt(offset) ?: return null
-        return resolveIdAttribute(el)
+        return ReadAction.compute<String?, RuntimeException> {
+            val psiFile = PsiManager.getInstance(project).findFile(file) ?: return@compute null
+            val el = psiFile.findElementAt(offset) ?: return@compute null
+            resolveIdAttribute(el)
+        }
     }
 
     private fun resolveIdAttribute(el: com.intellij.psi.PsiElement): String? {

@@ -2,6 +2,7 @@ package com.forge.bpmn
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
+import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.editor.ScrollType
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
@@ -50,6 +51,9 @@ object BpmnDiagramNavigator {
      * No bpmn-js shape for [elementId] (e.g. dangling sequence flow stripped on import).
      * Switch to the XML tab and place the caret on that element's `id` attribute —
      * do not pretend bendpoints exist on the canvas.
+     *
+     * Always force caret + scroll even when the XML tab / file is already focused
+     * (consecutive Problems clicks must not no-op).
      */
     fun openXmlAtElementId(project: Project, file: VirtualFile, elementId: String?) {
         if (elementId.isNullOrBlank() || !file.isValid || project.isDisposed) return
@@ -62,17 +66,18 @@ object BpmnDiagramNavigator {
                 if (!fem.isFileOpen(file)) {
                     OpenFileDescriptor(project, file).navigate(true)
                 }
+                // Ensure XML tab is selected before forcing caret (idempotent if already there).
                 fem.setSelectedEditor(file, "forge-bpmn-xml")
                 if (offset != null) {
-                    OpenFileDescriptor(project, file, offset).navigate(true)
-                    fem.setSelectedEditor(file, "forge-bpmn-xml")
-                    for (editor in fem.getEditors(file)) {
-                        if (editor is TextEditor && editor.getName() == "XML") {
-                            editor.editor.caretModel.moveToOffset(offset)
-                            editor.editor.scrollingModel.scrollToCaret(ScrollType.MAKE_VISIBLE)
-                            break
-                        }
-                    }
+                    // Prefer direct caret move: OpenFileDescriptor.navigate can no-op when
+                    // the file/editor is already open on a different offset.
+                    forceXmlCaret(fem, file, offset)
+                    // Second pass after tab selection settles (composite editor race).
+                    ApplicationManager.getApplication().invokeLater({
+                        if (project.isDisposed || !file.isValid) return@invokeLater
+                        fem.setSelectedEditor(file, "forge-bpmn-xml")
+                        forceXmlCaret(fem, file, offset)
+                    }, ModalityState.defaultModalityState(), project.disposed)
                 }
             } catch (_: Exception) {
                 // Best-effort XML navigation.
@@ -80,12 +85,38 @@ object BpmnDiagramNavigator {
         }, ModalityState.defaultModalityState(), project.disposed)
     }
 
+    private fun forceXmlCaret(fem: FileEditorManager, file: VirtualFile, offset: Int) {
+        for (editor in fem.getEditors(file)) {
+            if (editor is TextEditor && editor.getName() == "XML") {
+                val ed = editor.editor
+                ed.caretModel.moveToOffset(offset)
+                ed.selectionModel.removeSelection()
+                ed.scrollingModel.scrollToCaret(ScrollType.CENTER)
+                ed.contentComponent.requestFocusInWindow()
+                return
+            }
+        }
+        // Fallback: any TextEditor for this file (provider edge cases).
+        for (editor in fem.getEditors(file)) {
+            if (editor is TextEditor) {
+                val ed = editor.editor
+                ed.caretModel.moveToOffset(offset)
+                ed.selectionModel.removeSelection()
+                ed.scrollingModel.scrollToCaret(ScrollType.CENTER)
+                ed.contentComponent.requestFocusInWindow()
+                return
+            }
+        }
+    }
+
     private fun findIdAttributeOffset(project: Project, file: VirtualFile, elementId: String): Int? {
-        val psi = PsiManager.getInstance(project).findFile(file) as? XmlFile ?: return null
-        val root = psi.rootTag ?: return null
-        val attr = findIdAttribute(root, elementId) ?: return null
-        // Prefer the value token so the caret sits on the id text (matches Problems F4).
-        return attr.valueElement?.textRange?.startOffset ?: attr.textRange.startOffset
+        return ReadAction.compute<Int?, RuntimeException> {
+            val psi = PsiManager.getInstance(project).findFile(file) as? XmlFile ?: return@compute null
+            val root = psi.rootTag ?: return@compute null
+            val attr = findIdAttribute(root, elementId) ?: return@compute null
+            // Prefer the value token so the caret sits on the id text (matches Problems F4).
+            attr.valueElement?.textRange?.startOffset ?: attr.textRange.startOffset
+        }
     }
 
     private fun findIdAttribute(root: XmlTag, id: String): XmlAttribute? {

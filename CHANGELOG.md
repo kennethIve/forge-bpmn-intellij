@@ -2,6 +2,7 @@
 
 ## [0.4.5]
 
+- Fix consecutive Problems clicks on dangling (no-shape) flows: always force XML caret to the new element `id` even when the XML tab is already focused; wrap PSI reads (`syncSelectionFromCaret` / `resolveElementId` / `findIdAttributeOffset`) in `ReadAction` to stop the IDE error toast
 - No-shape fallback: Problems / Select on diagram / navigator — if the `elementId` has no bpmn-js shape (e.g. dangling `Flow_Broken` / `Flow_Nowhere`), switch to the **XML** tab and put the caret on that element’s `id` (no fake bendpoints); shapes still select on the BPMN canvas
 - Stop fixture wipe on open: diagram import / post-import repair no longer autosaves a cleaned model back to disk — only real user edits (`commandStack` after import) call `__onXmlChange`; `examples/fixtures/*.bpmn` survive open → BPMN/XML switch → close with no edits
 - Lint findings appear in the IDEA **Problems** tool window via `BpmnAnnotator` (works without a module / fixture opens; full-sentence messages; error vs warning). `BpmnInspection` kept in sources but unregistered to avoid duplicate rows

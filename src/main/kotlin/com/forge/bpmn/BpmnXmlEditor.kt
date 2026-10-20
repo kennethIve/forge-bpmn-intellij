@@ -1,5 +1,6 @@
 package com.forge.bpmn
 
+import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.editor.event.CaretEvent
 import com.intellij.openapi.editor.event.CaretListener
 import com.intellij.openapi.fileEditor.TextEditor
@@ -47,11 +48,13 @@ class BpmnXmlEditor(
 
     private fun syncSelectionFromCaret() {
         val project = delegate.editor.project ?: return
-        val document = delegate.editor.document
-        val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(document) ?: return
-        val offset = delegate.editor.caretModel.offset
-        val el = psiFile.findElementAt(offset) ?: return
-        val id = resolveElementId(el) ?: return
+        val id = ReadAction.compute<String?, RuntimeException> {
+            val document = delegate.editor.document
+            val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(document) ?: return@compute null
+            val offset = delegate.editor.caretModel.offset
+            val el = psiFile.findElementAt(offset) ?: return@compute null
+            resolveElementId(el)
+        } ?: return
         val fromNavigate = System.currentTimeMillis() - focusedAtMs < 300
         if (fromNavigate) {
             // Avoid loop when no-shape fallback just placed the caret on XML.
