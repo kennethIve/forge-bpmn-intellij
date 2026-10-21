@@ -128,6 +128,13 @@ class BpmnFileEditor(
                 onEdt { writeSystemClipboardText(text) }
                 null
             }
+            // JS Ctrl+V when in-memory clipboard is empty asks Kotlin to paste from AWT.
+            val pasteRequestQuery = JBCefJSQuery.create(b as JBCefBrowserBase)
+            Disposer.register(b, pasteRequestQuery)
+            pasteRequestQuery.addHandler { _ ->
+                onEdt { pasteDiagramClipboard(b.cefBrowser) }
+                null
+            }
             b.jbCefClient.addLoadHandler(object : CefLoadHandlerAdapter() {
                 override fun onLoadEnd(br: CefBrowser?, frame: CefFrame?, status: Int) {
                     if (frame == null || !frame.isMain) return
@@ -143,6 +150,9 @@ class BpmnFileEditor(
                         " };" +
                         "window.__onDiagramClip = function(text) { " +
                         clipQuery.inject("JSON.stringify(text)") +
+                        " };" +
+                        "window.__requestSystemClipPaste = function() { " +
+                        pasteRequestQuery.inject("'1'") +
                         " };"
                     br?.executeJavaScript(inject, br.url, 0)
                     SwingUtilities.invokeLater {

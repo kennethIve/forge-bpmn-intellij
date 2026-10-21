@@ -636,8 +636,8 @@
     // pasteElements when tree is missing and then fail on navigator.clipboard in JCEF.
     function diagramPaste() {
       try {
-        var clip = modeler.get("clipboard");
-        var tree = clip && clip.get && clip.get();
+        var clipboard = modeler.get("clipboard");
+        var tree = clipboard && clipboard.get && clipboard.get();
         if (tree) {
           var copyPaste = modeler.get("copyPaste");
           if (copyPaste && typeof copyPaste.paste === "function") {
@@ -646,7 +646,11 @@
           }
         }
       } catch (e) {}
-      diagramEditorAction("paste");
+      // nativeCopyPaste sets hints.clip=false so mem stays empty after C; cross-file
+      // and same-file-without-mem ask Kotlin to read AWT and call __diagramPasteFromSystemClip.
+      if (typeof window.__requestSystemClipPaste === "function") {
+        window.__requestSystemClipPaste();
+      }
     }
     function diagramCut() { diagramEditorAction("cut"); }
     // Camunda nativeCopyPaste revives $type objects into real moddle instances (bundled qG).
@@ -681,10 +685,16 @@
       } catch (e) { return false; }
     }
     // Mirror nativeCopyPaste into IDEA AWT clipboard so Ctrl+C in file A → Ctrl+V in file B works.
+    // Also set diagram-js clipboard: nativeCopyPaste sets hints.clip=false after writing
+    // navigator.clipboard, so the stock clipboard module skips clipboard.set(tree).
     try {
       modeler.get("eventBus").on("copyPaste.elementsCopied", function (e) {
         try {
           if (!e || !e.tree) return;
+          try {
+            var clip = modeler.get("clipboard");
+            if (clip && typeof clip.set === "function") clip.set(e.tree);
+          } catch (setErr) {}
           if (typeof window.__onDiagramClip === "function") {
             window.__onDiagramClip(BPMN_CLIP_PREFIX + JSON.stringify(e.tree));
           }
