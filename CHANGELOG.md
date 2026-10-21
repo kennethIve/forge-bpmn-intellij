@@ -2,6 +2,7 @@
 
 ## [0.4.6]
 
+- Cross-file Ctrl+V ghost: deliver AWT `bpmn-js-clip` via JBCefJSQuery Response (not `executeJavaScript(jsString)`); coalesce Cef+page paste so create-mode is not double-fired
 - Clear Marketplace Compatibility Warnings: replace deprecated `ReadAction.compute(ThrowableComputable)` with `ReadAction.nonBlocking { }.executeSynchronously()` (Navigator / Problems / XmlEditor)
 - Diagram Ctrl+C / Ctrl+V / Ctrl+X: same-file and cross-file paste with place/ghost (AWT clipboard bridge + mem seed on copy)
 - Properties panel toggle chevron: expanded shows `›`, collapsed shows `‹` (direction flipped)

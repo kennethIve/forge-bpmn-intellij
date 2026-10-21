@@ -634,22 +634,39 @@
     // Paste enters create-mode until click; cut/place fire commandStack.changed → persist.
     // Prefer in-memory clipboard tree so nativeCopyPaste (prio 2050) does not cancel
     // pasteElements when tree is missing and then fail on navigator.clipboard in JCEF.
+    // Cef KEYDOWN + page keydown can both fire once; coalesce so cross-file does not
+    // place two overlapping shapes. Do not arm the time guard before the AWT Response
+    // arrives — that callback is the intentional paste.
+    var pasteGuardUntil = 0;
+    var pasteRequestInFlight = false;
+    function createModeActive() {
+      try {
+        var dragging = modeler.get("dragging");
+        var ctx = dragging && dragging.context && dragging.context();
+        if (ctx && typeof ctx.prefix === "string" && ctx.prefix.indexOf("create") === 0) return true;
+      } catch (e) {}
+      return false;
+    }
     function diagramPaste() {
+      if (createModeActive() || Date.now() < pasteGuardUntil || pasteRequestInFlight) return;
       try {
         var clipboard = modeler.get("clipboard");
         var tree = clipboard && clipboard.get && clipboard.get();
         if (tree) {
           var copyPaste = modeler.get("copyPaste");
           if (copyPaste && typeof copyPaste.paste === "function") {
+            pasteGuardUntil = Date.now() + 400;
             copyPaste.paste({ tree: tree });
             return;
           }
         }
       } catch (e) {}
       // nativeCopyPaste sets hints.clip=false so mem stays empty after C; cross-file
-      // and same-file-without-mem ask Kotlin to read AWT and call __diagramPasteFromSystemClip.
+      // and same-file-without-mem ask Kotlin to return AWT text via JBCefJSQuery Response.
       if (typeof window.__requestSystemClipPaste === "function") {
+        pasteRequestInFlight = true;
         window.__requestSystemClipPaste();
+        setTimeout(function () { pasteRequestInFlight = false; }, 1500);
       }
     }
     function diagramCut() { diagramEditorAction("cut"); }
@@ -673,13 +690,17 @@
       };
     }
     function diagramPasteFromSystemClip(raw) {
+      pasteRequestInFlight = false;
       try {
         if (!raw || raw.indexOf(BPMN_CLIP_PREFIX) !== 0) return false;
+        // Another paste already entered create-mode (duplicate key handler); skip.
+        if (createModeActive() || Date.now() < pasteGuardUntil) return false;
         var moddle = modeler.get("moddle");
         if (!moddle) return false;
         var tree = JSON.parse(raw.substring(BPMN_CLIP_PREFIX.length), moddleClipReviver(moddle));
         var copyPaste = modeler.get("copyPaste");
         if (!copyPaste || typeof copyPaste.paste !== "function") return false;
+        pasteGuardUntil = Date.now() + 400;
         copyPaste.paste({ tree: tree });
         return true;
       } catch (e) { return false; }

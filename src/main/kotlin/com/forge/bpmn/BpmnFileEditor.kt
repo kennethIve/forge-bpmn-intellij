@@ -128,12 +128,18 @@ class BpmnFileEditor(
                 onEdt { writeSystemClipboardText(text) }
                 null
             }
-            // JS Ctrl+V when in-memory clipboard is empty asks Kotlin to paste from AWT.
+            // Cross-file paste: return AWT clip text via query Response (not executeJavaScript(jsString)).
+            // Embedding the bpmn-js-clip payload in a JS call is fragile (escaping / CEF size); the
+            // Response callback delivers the string intact so create-mode ghost matches same-file.
             val pasteRequestQuery = JBCefJSQuery.create(b as JBCefBrowserBase)
             Disposer.register(b, pasteRequestQuery)
             pasteRequestQuery.addHandler { _ ->
-                onEdt { pasteDiagramClipboard(b.cefBrowser) }
-                null
+                val text = readSystemClipboardText()
+                if (text != null && text.startsWith(BPMN_CLIP_PREFIX)) {
+                    JBCefJSQuery.Response(text)
+                } else {
+                    JBCefJSQuery.Response("")
+                }
             }
             b.jbCefClient.addLoadHandler(object : CefLoadHandlerAdapter() {
                 override fun onLoadEnd(br: CefBrowser?, frame: CefFrame?, status: Int) {
@@ -152,7 +158,11 @@ class BpmnFileEditor(
                         clipQuery.inject("JSON.stringify(text)") +
                         " };" +
                         "window.__requestSystemClipPaste = function() { " +
-                        pasteRequestQuery.inject("'1'") +
+                        pasteRequestQuery.inject(
+                            "'1'",
+                            "function(response){if(response){window.__diagramPasteFromSystemClip&&window.__diagramPasteFromSystemClip(response);}}",
+                            "function(c,m){}",
+                        ) +
                         " };"
                     br?.executeJavaScript(inject, br.url, 0)
                     SwingUtilities.invokeLater {
@@ -186,7 +196,12 @@ class BpmnFileEditor(
                     // Let CEF/browser handle text undo/copy/paste/cut in FEEL, Name, etc.
                     if (event.focus_on_editable_field) return false
                     when {
-                        isV -> pasteDiagramClipboard(browser)
+                        // Unified with page keydown: mem clipboard first, else AWT via query Response.
+                        isV -> browser.executeJavaScript(
+                            "window.__diagramPaste && window.__diagramPaste();",
+                            browser.url,
+                            0,
+                        )
                         else -> {
                             val call = when {
                                 isC -> "window.__diagramCopy && window.__diagramCopy();"
@@ -263,24 +278,6 @@ class BpmnFileEditor(
             clip.getData(DataFlavor.stringFlavor) as? String
         } catch (_: Exception) {
             null
-        }
-    }
-
-    /** Prefer AWT clipboard (cross-file); fall back to in-modeler clipboard. */
-    private fun pasteDiagramClipboard(browser: CefBrowser) {
-        val text = readSystemClipboardText()
-        if (text != null && text.startsWith(BPMN_CLIP_PREFIX)) {
-            val call =
-                "window.__diagramPasteFromSystemClip && window.__diagramPasteFromSystemClip(" +
-                    jsString(text) +
-                    ");"
-            browser.executeJavaScript(call, browser.url, 0)
-        } else {
-            browser.executeJavaScript(
-                "window.__diagramPaste && window.__diagramPaste();",
-                browser.url,
-                0,
-            )
         }
     }
 
