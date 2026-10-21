@@ -2,8 +2,9 @@
 
 ## [0.4.6]
 
-- Cross-file Ctrl+V ghost: deliver AWT `bpmn-js-clip` via JBCefJSQuery Response (not `executeJavaScript(jsString)`); coalesce Cef+page paste so create-mode is not double-fired
-- Clear Marketplace Compatibility Warnings: replace deprecated `ReadAction.compute(ThrowableComputable)` with `ReadAction.nonBlocking { }.executeSynchronously()` (Navigator / Problems / XmlEditor)
+- Cross-file Ctrl+V ghost: companion `lastDiagramClip` cache + Kotlin Cef KEYDOWN paste via base64 (`__diagramPasteFromSystemClipB64`); JBCefJSQuery Response kept as secondary; coalesce guards unchanged for same-file
+- EDT-safe PSI reads: replace `ReadAction.nonBlocking { }.executeSynchronously()` with `Application.runReadAction(Computable)` (Navigator / Problems / XmlEditor) — stops `syncSelectionFromCaret` assertion toast on OpenFile
+- Clear Marketplace Compatibility Warnings: avoid deprecated `ReadAction.compute(ThrowableComputable)` bytecode
 - Diagram Ctrl+C / Ctrl+V / Ctrl+X: same-file and cross-file paste with place/ghost (AWT clipboard bridge + mem seed on copy)
 - Properties panel toggle chevron: expanded shows `›`, collapsed shows `‹` (direction flipped)
 
