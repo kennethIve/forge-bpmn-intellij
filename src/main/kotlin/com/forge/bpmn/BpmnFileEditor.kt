@@ -155,11 +155,22 @@ class BpmnFileEditor(
                     val code = event.windows_key_code
                     val isZ = code == 'Z'.code || code == 'z'.code
                     val isY = code == 'Y'.code || code == 'y'.code
-                    if (!isZ && !isY) return false
-                    // Let CEF/browser undo text in FEEL, Name, and other inputs.
+                    val isC = code == 'C'.code || code == 'c'.code
+                    val isV = code == 'V'.code || code == 'v'.code
+                    val isX = code == 'X'.code || code == 'x'.code
+                    if (!isZ && !isY && !isC && !isV && !isX) return false
+                    // Let CEF/browser handle text undo/copy/paste/cut in FEEL, Name, etc.
                     if (event.focus_on_editable_field) return false
-                    val redo = isY || (isZ && shift)
-                    val call = if (redo) "window.__diagramRedo && window.__diagramRedo();" else "window.__diagramUndo && window.__diagramUndo();"
+                    val call = when {
+                        isC -> "window.__diagramCopy && window.__diagramCopy();"
+                        isV -> "window.__diagramPaste && window.__diagramPaste();"
+                        isX -> "window.__diagramCut && window.__diagramCut();"
+                        else -> {
+                            val redo = isY || (isZ && shift)
+                            if (redo) "window.__diagramRedo && window.__diagramRedo();"
+                            else "window.__diagramUndo && window.__diagramUndo();"
+                        }
+                    }
                     browser.executeJavaScript(call, browser.url, 0)
                     isKeyboardShortcut?.set(true)
                     return true

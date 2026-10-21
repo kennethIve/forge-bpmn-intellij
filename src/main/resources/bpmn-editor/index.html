@@ -622,6 +622,20 @@
     }
     window.__diagramUndo = diagramUndo;
     window.__diagramRedo = diagramRedo;
+    function diagramEditorAction(name) {
+      try {
+        var actions = modeler.get("editorActions");
+        if (!actions || typeof actions.trigger !== "function") return;
+        actions.trigger(name);
+      } catch (e) {}
+    }
+    function diagramCopy() { diagramEditorAction("copy"); }
+    // Paste enters create-mode until click; cut/place fire commandStack.changed → persist.
+    function diagramPaste() { diagramEditorAction("paste"); }
+    function diagramCut() { diagramEditorAction("cut"); }
+    window.__diagramCopy = diagramCopy;
+    window.__diagramPaste = diagramPaste;
+    window.__diagramCut = diagramCut;
     window.__handleDiagramUndoKey = function (redo) { if (isEditableTarget(document.activeElement)) return false; if (redo) diagramRedo(); else diagramUndo(); return true; };
     window.addEventListener("keydown", function (e) {
       var mod = e.ctrlKey || e.metaKey;
@@ -629,15 +643,21 @@
       var key = (e.key || "").toLowerCase();
       var isZ = key === "z" || e.code === "KeyZ";
       var isY = key === "y" || e.code === "KeyY";
-      if (!isZ && !isY) return;
-      var redo = isY || (isZ && e.shiftKey);
-      // FEEL/CM keep native text undo; do not call diagram commandStack.undo.
+      var isC = key === "c" || e.code === "KeyC";
+      var isV = key === "v" || e.code === "KeyV";
+      var isX = key === "x" || e.code === "KeyX";
+      if (!isZ && !isY && !isC && !isV && !isX) return;
+      // FEEL/CM keep native text undo/copy/paste/cut.
       // After CM history applies, flush debounced setValue + persist so disk matches UI.
       if (isEditableTarget(e.target)) {
-        if (isFeelEditableTarget(e.target)) scheduleFeelHistoryPersist();
+        if ((isZ || isY) && isFeelEditableTarget(e.target)) scheduleFeelHistoryPersist();
         return;
       }
       e.preventDefault(); e.stopPropagation();
+      if (isC) { diagramCopy(); return; }
+      if (isV) { diagramPaste(); return; }
+      if (isX) { diagramCut(); return; }
+      var redo = isY || (isZ && e.shiftKey);
       if (redo) diagramRedo(); else diagramUndo();
     }, true);
     function fit() { try { modeler.get("canvas").zoom("fit-viewport", "auto"); } catch (e) {} }
