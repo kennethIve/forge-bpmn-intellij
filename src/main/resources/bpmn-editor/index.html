@@ -629,13 +629,36 @@
         actions.trigger(name);
       } catch (e) {}
     }
+    var BPMN_CLIP_PREFIX = "bpmn-js-clip----";
     function diagramCopy() { diagramEditorAction("copy"); }
     // Paste enters create-mode until click; cut/place fire commandStack.changed → persist.
     function diagramPaste() { diagramEditorAction("paste"); }
     function diagramCut() { diagramEditorAction("cut"); }
+    function diagramPasteFromSystemClip(raw) {
+      try {
+        if (!raw || raw.indexOf(BPMN_CLIP_PREFIX) !== 0) return false;
+        var tree = JSON.parse(raw.substring(BPMN_CLIP_PREFIX.length));
+        var copyPaste = modeler.get("copyPaste");
+        if (!copyPaste || typeof copyPaste.paste !== "function") return false;
+        copyPaste.paste({ tree: tree });
+        return true;
+      } catch (e) { return false; }
+    }
+    // Mirror nativeCopyPaste into IDEA AWT clipboard so Ctrl+C in file A → Ctrl+V in file B works.
+    try {
+      modeler.get("eventBus").on("copyPaste.elementsCopied", function (e) {
+        try {
+          if (!e || !e.tree) return;
+          if (typeof window.__onDiagramClip === "function") {
+            window.__onDiagramClip(BPMN_CLIP_PREFIX + JSON.stringify(e.tree));
+          }
+        } catch (err) {}
+      });
+    } catch (e) {}
     window.__diagramCopy = diagramCopy;
     window.__diagramPaste = diagramPaste;
     window.__diagramCut = diagramCut;
+    window.__diagramPasteFromSystemClip = diagramPasteFromSystemClip;
     window.__handleDiagramUndoKey = function (redo) { if (isEditableTarget(document.activeElement)) return false; if (redo) diagramRedo(); else diagramUndo(); return true; };
     window.addEventListener("keydown", function (e) {
       var mod = e.ctrlKey || e.metaKey;

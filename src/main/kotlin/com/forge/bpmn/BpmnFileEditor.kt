@@ -31,6 +31,9 @@ import org.cef.handler.CefLoadHandlerAdapter
 import org.cef.misc.BoolRef
 import org.cef.misc.EventFlags
 import java.awt.BorderLayout
+import java.awt.Toolkit
+import java.awt.datatransfer.DataFlavor
+import java.awt.datatransfer.StringSelection
 import java.awt.Color
 import java.awt.Component
 import java.awt.MouseInfo
@@ -117,6 +120,14 @@ class BpmnFileEditor(
                 }
                 null
             }
+            // Cross-file shape clipboard: JS writes bpmn-js clip payload → AWT system clipboard.
+            val clipQuery = JBCefJSQuery.create(b as JBCefBrowserBase)
+            Disposer.register(b, clipQuery)
+            clipQuery.addHandler { payload ->
+                val text = decodeXmlPayload(payload)
+                onEdt { writeSystemClipboardText(text) }
+                null
+            }
             b.jbCefClient.addLoadHandler(object : CefLoadHandlerAdapter() {
                 override fun onLoadEnd(br: CefBrowser?, frame: CefFrame?, status: Int) {
                     if (frame == null || !frame.isMain) return
@@ -129,6 +140,9 @@ class BpmnFileEditor(
                         " };" +
                         "window.__onSelectionChanged = function(id) { " +
                         selectionQuery.inject("JSON.stringify(id || '')") +
+                        " };" +
+                        "window.__onDiagramClip = function(text) { " +
+                        clipQuery.inject("JSON.stringify(text)") +
                         " };"
                     br?.executeJavaScript(inject, br.url, 0)
                     SwingUtilities.invokeLater {
@@ -161,17 +175,21 @@ class BpmnFileEditor(
                     if (!isZ && !isY && !isC && !isV && !isX) return false
                     // Let CEF/browser handle text undo/copy/paste/cut in FEEL, Name, etc.
                     if (event.focus_on_editable_field) return false
-                    val call = when {
-                        isC -> "window.__diagramCopy && window.__diagramCopy();"
-                        isV -> "window.__diagramPaste && window.__diagramPaste();"
-                        isX -> "window.__diagramCut && window.__diagramCut();"
+                    when {
+                        isV -> pasteDiagramClipboard(browser)
                         else -> {
-                            val redo = isY || (isZ && shift)
-                            if (redo) "window.__diagramRedo && window.__diagramRedo();"
-                            else "window.__diagramUndo && window.__diagramUndo();"
+                            val call = when {
+                                isC -> "window.__diagramCopy && window.__diagramCopy();"
+                                isX -> "window.__diagramCut && window.__diagramCut();"
+                                else -> {
+                                    val redo = isY || (isZ && shift)
+                                    if (redo) "window.__diagramRedo && window.__diagramRedo();"
+                                    else "window.__diagramUndo && window.__diagramUndo();"
+                                }
+                            }
+                            browser.executeJavaScript(call, browser.url, 0)
                         }
                     }
-                    browser.executeJavaScript(call, browser.url, 0)
                     isKeyboardShortcut?.set(true)
                     return true
                 }
@@ -211,6 +229,47 @@ class BpmnFileEditor(
                         }
                     }
                 },
+            )
+        }
+    }
+
+
+    companion object {
+        private const val BPMN_CLIP_PREFIX = "bpmn-js-clip----"
+    }
+
+    private fun writeSystemClipboardText(text: String) {
+        if (text.isEmpty()) return
+        try {
+            Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(text), null)
+        } catch (_: Exception) {
+        }
+    }
+
+    private fun readSystemClipboardText(): String? {
+        return try {
+            val clip = Toolkit.getDefaultToolkit().systemClipboard
+            if (!clip.isDataFlavorAvailable(DataFlavor.stringFlavor)) return null
+            clip.getData(DataFlavor.stringFlavor) as? String
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    /** Prefer AWT clipboard (cross-file); fall back to in-modeler clipboard. */
+    private fun pasteDiagramClipboard(browser: CefBrowser) {
+        val text = readSystemClipboardText()
+        if (text != null && text.startsWith(BPMN_CLIP_PREFIX)) {
+            val call =
+                "window.__diagramPasteFromSystemClip && window.__diagramPasteFromSystemClip(" +
+                    jsString(text) +
+                    ");"
+            browser.executeJavaScript(call, browser.url, 0)
+        } else {
+            browser.executeJavaScript(
+                "window.__diagramPaste && window.__diagramPaste();",
+                browser.url,
+                0,
             )
         }
     }
@@ -264,11 +323,15 @@ class BpmnFileEditor(
         sb.append('"')
         for (ch in value) {
             when (ch) {
-                Char(92) -> { sb.append(Char(92)); sb.append(Char(92)) }
-                '"' -> { sb.append(Char(92)); sb.append('"') }
-                Char(10) -> { sb.append(Char(92)); sb.append('n') }
-                Char(13) -> { }
-                else -> sb.append(ch)
+                '\\' -> sb.append("\\\\")
+                '"' -> sb.append("\\\"")
+                '\n' -> sb.append("\\n")
+                '\r' -> sb.append("\\r")
+                '\t' -> sb.append("\\t")
+                else -> {
+                    val code = ch.code
+                    if (code < 0x20) sb.append("\\u%04x".format(code)) else sb.append(ch)
+                }
             }
         }
         sb.append('"')

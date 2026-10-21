@@ -2,6 +2,7 @@
 
 ## [0.4.5]
 
+- Cross-file diagram copy/paste: Ctrl+C writes `bpmn-js-clip----` payload to the system clipboard via JCEF→AWT bridge; Ctrl+V in another .bpmn file pastes from that payload (then click to place)
 - Diagram Ctrl+C / Ctrl+V / Ctrl+X (and Cmd): copy/paste/cut shapes via bpmn-js editorActions when focus is on the canvas; text fields keep native clipboard
 - Diagram ↔ XML selection sync: canvas select moves XML caret to the element `id` and paints solid `#3574F0` + white text (no transparency / no underline stack); XML caret on `id` selects on canvas; selection outline + bendpoints use solid `#3574F0` / 2px in Light and Dark
 - Fix Problems row click after XML navigate: drop the “focus must be in Problems tree” gate — mark mouse-presses on the tree via `AWTEventListener` so a single click still moves the caret when focus is on XML; keep `ReadAction` wrappers and force-caret on `openXmlAtElementId`
