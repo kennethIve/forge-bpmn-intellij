@@ -31,6 +31,7 @@ import org.cef.handler.CefLoadHandlerAdapter
 import org.cef.misc.BoolRef
 import org.cef.misc.EventFlags
 import java.awt.BorderLayout
+import java.util.Base64
 import java.awt.Toolkit
 import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.StringSelection
@@ -125,17 +126,19 @@ class BpmnFileEditor(
             Disposer.register(b, clipQuery)
             clipQuery.addHandler { payload ->
                 val text = decodeXmlPayload(payload)
+                if (text.startsWith(BPMN_CLIP_PREFIX)) {
+                    lastDiagramClip = text
+                }
                 onEdt { writeSystemClipboardText(text) }
                 null
             }
-            // Cross-file paste: return AWT clip text via query Response (not executeJavaScript(jsString)).
-            // Embedding the bpmn-js-clip payload in a JS call is fragile (escaping / CEF size); the
-            // Response callback delivers the string intact so create-mode ghost matches same-file.
+            // Secondary path: JS asks Kotlin for clip when mem is empty (page keydown).
+            // Primary path is Cef KEYDOWN → pasteDiagramClipboard (cache/AWT → base64 JS).
             val pasteRequestQuery = JBCefJSQuery.create(b as JBCefBrowserBase)
             Disposer.register(b, pasteRequestQuery)
             pasteRequestQuery.addHandler { _ ->
-                val text = readSystemClipboardText()
-                if (text != null && text.startsWith(BPMN_CLIP_PREFIX)) {
+                val text = resolveDiagramClipText()
+                if (text != null) {
                     JBCefJSQuery.Response(text)
                 } else {
                     JBCefJSQuery.Response("")
@@ -196,12 +199,9 @@ class BpmnFileEditor(
                     // Let CEF/browser handle text undo/copy/paste/cut in FEEL, Name, etc.
                     if (event.focus_on_editable_field) return false
                     when {
-                        // Unified with page keydown: mem clipboard first, else AWT via query Response.
-                        isV -> browser.executeJavaScript(
-                            "window.__diagramPaste && window.__diagramPaste();",
-                            browser.url,
-                            0,
-                        )
+                        // Cross-file: Kotlin reads companion cache / AWT and injects via base64.
+                        // Same-file with empty cache falls through to __diagramPaste (mem-first).
+                        isV -> pasteDiagramClipboard(browser)
                         else -> {
                             val call = when {
                                 isC -> "window.__diagramCopy && window.__diagramCopy();"
@@ -261,6 +261,38 @@ class BpmnFileEditor(
 
     companion object {
         private const val BPMN_CLIP_PREFIX = "bpmn-js-clip----"
+
+        /** Shared across editors so file A copy is visible to file B paste without relying on AWT alone. */
+        @Volatile
+        var lastDiagramClip: String? = null
+    }
+
+    private fun resolveDiagramClipText(): String? {
+        val cached = lastDiagramClip
+        if (cached != null && cached.startsWith(BPMN_CLIP_PREFIX)) return cached
+        val awt = readSystemClipboardText()
+        return if (awt != null && awt.startsWith(BPMN_CLIP_PREFIX)) awt else null
+    }
+
+    /** Prefer companion cache (cross-file), then AWT; fall back to in-modeler clipboard. */
+    private fun pasteDiagramClipboard(browser: CefBrowser) {
+        val text = resolveDiagramClipText()
+        if (text != null) {
+            val b64 = Base64.getEncoder().encodeToString(text.toByteArray(Charsets.UTF_8))
+            browser.executeJavaScript(
+                "window.__diagramPasteFromSystemClipB64 && window.__diagramPasteFromSystemClipB64(" +
+                    jsString(b64) +
+                    ");",
+                browser.url,
+                0,
+            )
+        } else {
+            browser.executeJavaScript(
+                "window.__diagramPaste && window.__diagramPaste();",
+                browser.url,
+                0,
+            )
+        }
     }
 
     private fun writeSystemClipboardText(text: String) {

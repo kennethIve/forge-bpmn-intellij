@@ -662,7 +662,7 @@
         }
       } catch (e) {}
       // nativeCopyPaste sets hints.clip=false so mem stays empty after C; cross-file
-      // and same-file-without-mem ask Kotlin to return AWT text via JBCefJSQuery Response.
+      // and same-file-without-mem ask Kotlin (secondary Response path; Cef KEYDOWN uses B64).
       if (typeof window.__requestSystemClipPaste === "function") {
         pasteRequestInFlight = true;
         window.__requestSystemClipPaste();
@@ -705,6 +705,20 @@
         return true;
       } catch (e) { return false; }
     }
+    // Kotlin Cef KEYDOWN paste: UTF-8 payload as base64 avoids jsString breakage on large trees.
+    function diagramPasteFromSystemClipB64(b64) {
+      pasteRequestInFlight = false;
+      try {
+        if (!b64) return false;
+        var bin = atob(b64);
+        var bytes = new Uint8Array(bin.length);
+        for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        var raw = (typeof TextDecoder !== "undefined")
+          ? new TextDecoder("utf-8").decode(bytes)
+          : decodeURIComponent(escape(bin));
+        return diagramPasteFromSystemClip(raw);
+      } catch (e) { return false; }
+    }
     // Mirror nativeCopyPaste into IDEA AWT clipboard so Ctrl+C in file A → Ctrl+V in file B works.
     // Also set diagram-js clipboard: nativeCopyPaste sets hints.clip=false after writing
     // navigator.clipboard, so the stock clipboard module skips clipboard.set(tree).
@@ -726,6 +740,7 @@
     window.__diagramPaste = diagramPaste;
     window.__diagramCut = diagramCut;
     window.__diagramPasteFromSystemClip = diagramPasteFromSystemClip;
+    window.__diagramPasteFromSystemClipB64 = diagramPasteFromSystemClipB64;
     window.__handleDiagramUndoKey = function (redo) { if (isEditableTarget(document.activeElement)) return false; if (redo) diagramRedo(); else diagramUndo(); return true; };
     window.addEventListener("keydown", function (e) {
       var mod = e.ctrlKey || e.metaKey;
