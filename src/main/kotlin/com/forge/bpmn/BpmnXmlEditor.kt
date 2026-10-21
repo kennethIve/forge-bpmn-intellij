@@ -16,7 +16,7 @@ import javax.swing.SwingUtilities
 /**
  * XML tab wrapper. Caret on an element `id` attribute selects that node on the diagram
  * canvas so F4 / double-click Problems navigation (which lands on the id attr) also
- * selects the shape.
+ * selects the shape, and paints a solid `#3574F0` + white-text sync highlight on the id.
  *
  * Single-click Problems selection is handled by [BpmnProblemsSelectionHook] (tree focus).
  * If the XML editor gained focus immediately before the caret move (Autoscroll / F4),
@@ -54,7 +54,21 @@ class BpmnXmlEditor(
             val offset = delegate.editor.caretModel.offset
             val el = psiFile.findElementAt(offset) ?: return@compute null
             resolveElementId(el)
-        } ?: return
+        }
+        if (id == null) {
+            BpmnXmlSelectionHighlight.clear(delegate.editor)
+            return
+        }
+        // Solid #3574F0 + white text on the id value (same token as canvas selection).
+        BpmnDiagramNavigator.highlightXmlId(
+            project,
+            file,
+            id,
+            moveCaret = false,
+            requestFocus = false,
+        )
+        // Canvas → XML just moved the caret; do not bounce selectElement.
+        if (BpmnDiagramNavigator.isCaretSelectSuppressed()) return
         val fromNavigate = System.currentTimeMillis() - focusedAtMs < 300
         if (fromNavigate) {
             // Avoid loop when no-shape fallback just placed the caret on XML.

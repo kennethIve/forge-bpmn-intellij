@@ -100,7 +100,33 @@
     .djs-palette .entry:hover { background: var(--palette-hover) !important; }
     .djs-palette .separator { border-color: var(--palette-border) !important; }
     .djs-popup, .djs-context-pad .entry { background: var(--palette) !important; color: var(--palette-fg) !important; border-color: var(--palette-border) !important; }
-    html.dark .djs-outline { fill: none !important; stroke: #7EB0FF !important; stroke-width: 2px !important; }
+    /* Selection sync: solid #3574F0, 2px — same in Light and Dark */
+    .djs-parent {
+      --element-selected-outline-stroke-color: #3574F0;
+      --element-selected-outline-secondary-stroke-color: #3574F0;
+      --bendpoint-fill-color: #3574F0;
+    }
+    .djs-selection-outline,
+    .djs-element.selected .djs-outline,
+    .djs-connection.selected .djs-outline,
+    .djs-multi-select .djs-element.selected .djs-outline,
+    .djs-dragging-active-lasso .djs-element.selected .djs-outline {
+      stroke: #3574F0 !important;
+      stroke-width: 2px !important;
+    }
+    html.dark .djs-selection-outline,
+    html.dark .djs-element.selected .djs-outline,
+    html.dark .djs-connection.selected .djs-outline {
+      fill: none !important;
+      stroke: #3574F0 !important;
+      stroke-width: 2px !important;
+    }
+    .djs-bendpoint .djs-visual,
+    .djs-segment-dragger .djs-visual,
+    .djs-bendpoint:hover .djs-visual,
+    .djs-bendpoint.floating .djs-visual {
+      fill: #3574F0 !important;
+    }
     html.dark .djs-context-pad.open { display: block; width: auto !important; max-width: 132px; padding: 6px; background: #2B2D30; border: 1px solid #6A7380; border-radius: 8px; box-shadow: 0 10px 28px rgba(0,0,0,.5), 0 0 0 1px rgba(126,176,255,.35); }
     html.dark .djs-context-pad .entry { width: 28px !important; height: 28px !important; font-size: 18px !important; line-height: 28px !important; margin: 2px !important; border-radius: 6px !important; background: #3C3F44 !important; color: #F2F4F7 !important; box-shadow: none !important; }
     html.dark .djs-context-pad .entry:hover { background: #548AF7 !important; color: #fff !important; }
@@ -330,6 +356,7 @@
     var lastAppliedXml = null;
     modeler.on("tokenSimulation.toggleMode", function (e) { simulating = !!(e && e.active); document.getElementById("app").classList.toggle("simulating", simulating); });
     var pendingSelect = null;
+    var suppressSelectionNotify = false;
     function selectElement(id, opts) {
       if (!id) return false;
       opts = opts || {};
@@ -345,6 +372,8 @@
           if (opts.fallback && window.__onElementMissing) window.__onElementMissing(id);
           return false;
         }
+        // Programmatic select (XML caret / Problems) — do not bounce to XML again.
+        suppressSelectionNotify = true;
         modeler.get("selection").select(el);
         try { modeler.get("canvas").scrollToElement(el); } catch (e1) {}
         return true;
@@ -354,6 +383,27 @@
       }
     }
     window.__selectElement = selectElement;
+    function primarySelectionId(selection) {
+      var sel = selection || [];
+      for (var i = 0; i < sel.length; i++) {
+        var el = sel[i];
+        if (!el || !el.id) continue;
+        if (String(el.id).indexOf("_label") !== -1) continue;
+        return el.id;
+      }
+      return "";
+    }
+    try {
+      modeler.on("selection.changed", function (e) {
+        if (suppressSelectionNotify) {
+          suppressSelectionNotify = false;
+          return;
+        }
+        if (applying) return;
+        var id = primarySelectionId(e && e.newSelection);
+        if (window.__onSelectionChanged) window.__onSelectionChanged(id);
+      });
+    } catch (eSel) {}
     /** Process / root ids have no corner glyph — pin badge to first shape child so ERROR shows red. */
     function badgeTargetId(elementId) {
       try {

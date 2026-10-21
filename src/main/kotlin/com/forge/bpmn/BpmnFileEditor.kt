@@ -102,6 +102,19 @@ class BpmnFileEditor(
                 }
                 null
             }
+            val selectionQuery = JBCefJSQuery.create(b as JBCefBrowserBase)
+            Disposer.register(b, selectionQuery)
+            selectionQuery.addHandler { payload ->
+                val id = decodeXmlPayload(payload).trim().trim('"')
+                onEdt {
+                    if (id.isBlank()) {
+                        BpmnDiagramNavigator.clearXmlSelectionHighlight(project, file)
+                    } else {
+                        BpmnDiagramNavigator.syncXmlFromCanvas(project, file, id)
+                    }
+                }
+                null
+            }
             b.jbCefClient.addLoadHandler(object : CefLoadHandlerAdapter() {
                 override fun onLoadEnd(br: CefBrowser?, frame: CefFrame?, status: Int) {
                     if (frame == null || !frame.isMain) return
@@ -111,6 +124,9 @@ class BpmnFileEditor(
                         " };" +
                         "window.__onElementMissing = function(id) { " +
                         missingQuery.inject("JSON.stringify(id)") +
+                        " };" +
+                        "window.__onSelectionChanged = function(id) { " +
+                        selectionQuery.inject("JSON.stringify(id || '')") +
                         " };"
                     br?.executeJavaScript(inject, br.url, 0)
                     SwingUtilities.invokeLater {
