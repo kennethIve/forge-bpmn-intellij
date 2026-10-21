@@ -21,6 +21,7 @@
 - Diagram Ctrl+Z / Ctrl+Y (and Cmd): undo/redo via bpmn-js commandStack when focus is on the canvas; text/FEEL fields keep their own undo; skip no-op XML reload that wiped history
 - Undo/Redo hardened: persist XML after undo/redo even when the command stack is empty (undo-to-pristine no longer leaves disk ahead of the canvas); post-import stack clear skips if the user already edited; flush pending canvas XML when leaving the BPMN tab; FEEL pop-out treated as editable so Ctrl+Z does not steal diagram undo
 - FEEL/condition Ctrl+Z/Y: after CodeMirror text history, flush the properties-panel debounce into the model and `__flushPersistNow` so disk matches the undone/redone UI (tab leave also flushes pending FEEL debounce first)
+- FEEL pop-out Ctrl+Z/Y: flush the Feel-entry debounce via the still-mounted inline editor (pop-out CM has no onBlur flush) and on pop-out close; keep `language="feel"` when sequence-flow setValue replaces FormalExpression
 
 
 ## [0.4.4]

@@ -486,15 +486,41 @@
       }
       return false;
     }
+    function isFeelPopupOpen() {
+      return !!document.querySelector(".bio-properties-panel-feel-popup");
+    }
+    // Inline FEEL onBlur → debounce.flush → setValue. Pop-out CM has no onBlur flush;
+    // the Feel entry debounce still lives on the inline editor, so focus+blur it.
+    function flushFeelDebounceViaInlineBlur() {
+      try {
+        var inline = document.querySelector(
+          ".bio-properties-panel-feel-entry .bio-properties-panel-feel-editor-container .cm-content"
+        );
+        if (!inline) {
+          inline = document.querySelector(".bio-properties-panel-feel-entry .cm-content");
+        }
+        if (!inline) return;
+        inline.focus();
+        inline.blur();
+      } catch (e) {}
+    }
     // FEEL/CodeMirror onInput is debounced in the properties panel. Blur runs its
     // onBlur → debounce.flush → setValue → commandStack so the model matches the UI.
     function flushFeelEditorDebounce() {
+      var restore = null;
       try {
         var active = document.activeElement;
-        if (!active || !isFeelEditableTarget(active)) return null;
-        active.blur();
-        return active;
-      } catch (e) { return null; }
+        var inPopup = !!(active && active.closest && active.closest(".bio-properties-panel-feel-popup"));
+        if (active && isFeelEditableTarget(active)) {
+          active.blur();
+          restore = active;
+        }
+        // Pop-out: active blur is a no-op for the Feel entry debounce — flush via inline.
+        if (inPopup || isFeelPopupOpen()) {
+          flushFeelDebounceViaInlineBlur();
+        }
+      } catch (e) {}
+      return restore;
     }
     // After CM history undo/redo: flush panel debounce into the model, then persist now.
     function persistFeelHistoryNow() {
@@ -517,6 +543,32 @@
       clearPersistTimer();
       flushPersist();
     };
+    // Camunda Cloud sequence-flow setValue replaces FormalExpression with {body} only,
+    // dropping language="feel". Stamp it back in preExecute so undo/redo XML stays valid.
+    try {
+      modeler.get("eventBus").on("commandStack.element.updateProperties.preExecute", function (e) {
+        var ctx = e && e.context;
+        var props = ctx && ctx.properties;
+        var expr = props && props.conditionExpression;
+        if (!expr) return;
+        try {
+          if (typeof expr.get === "function") {
+            if (expr.get("language")) return;
+            if (expr.get("body") == null || expr.get("body") === "") return;
+            expr.set("language", "feel");
+          } else if (!expr.language) {
+            if (expr.body == null || expr.body === "") return;
+            expr.language = "feel";
+          }
+        } catch (err) {}
+      });
+    } catch (e) {}
+    // Closing the FEEL pop-out must flush the same debounce (text popup already does).
+    try {
+      modeler.get("eventBus").on("propertiesPanelPopup.close", function () {
+        flushFeelDebounceViaInlineBlur();
+      });
+    } catch (e) {}
     modeler.on("commandStack.changed", function () {
       if (applying || simulating) return;
       try {
