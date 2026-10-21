@@ -29,7 +29,7 @@ intellijPlatform {
     pluginConfiguration {
         name = providers.gradleProperty("pluginName")
         version = providers.gradleProperty("pluginVersion")
-        description = providers.gradleProperty("pluginDescription")
+        // Keep HTML <description> from plugin.xml - gradle.properties Latin-1 read double-encodes em/en dashes.
         ideaVersion {
             sinceBuild = providers.gradleProperty("pluginSinceBuild")
             untilBuild = provider { null }

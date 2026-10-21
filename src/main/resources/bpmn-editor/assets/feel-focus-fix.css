@@ -29,3 +29,10 @@ html body #properties .bio-properties-panel input:focus {
   outline: none !important;
   box-shadow: none !important;
 }
+
+/* Reserve space so a long first line does not sit under the absolute FEEL pop-out icon. */
+.bio-properties-panel-feel-editor-container .cm-editor .cm-content,
+.bio-properties-panel-feel-container .cm-editor .cm-content,
+.bio-properties-panel-feelers-editor-container .cm-editor .cm-content {
+  padding-right: 2em;
+}

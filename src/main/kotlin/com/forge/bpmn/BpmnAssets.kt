@@ -9,6 +9,7 @@ object BpmnAssets {
         "index.html",
         "camunda-cloud-modeler.production.min.js",
         "assets/camunda-cloud-modeler.css",
+        "assets/feel-focus-fix.css",
         "assets/base-modeler.css",
         "assets/diagram-js.css",
         "assets/bpmn-js.css",

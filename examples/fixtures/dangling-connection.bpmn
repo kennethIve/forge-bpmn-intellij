@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+    xmlns:modeler="http://camunda.org/schema/modeler/1.0"
+    id="Definitions_Dangling"
+    targetNamespace="http://forge.bpmn/fixtures"
+    exporter="Forge BPMN"
+    exporterVersion="0.4.5"
+    modeler:executionPlatform="Camunda Cloud"
+    modeler:executionPlatformVersion="8.6.0">
+  <bpmn:process id="Process_Dangling" name="Fixture: dangling connection" isExecutable="true">
+    <bpmn:startEvent id="Start_1" name="Start">
+      <bpmn:outgoing>Flow_Broken</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Task_Orphan" name="Orphan task">
+      <bpmn:incoming>Flow_Nowhere</bpmn:incoming>
+    </bpmn:task>
+    <!-- Intentional: targetRef points at a non-existent element (broken / dangling flow) -->
+    <bpmn:sequenceFlow id="Flow_Broken" name="broken" sourceRef="Start_1" targetRef="Missing_Element_XYZ"/>
+    <!-- Intentional: sourceRef points at a non-existent element -->
+    <bpmn:sequenceFlow id="Flow_Nowhere" sourceRef="Missing_Source_ABC" targetRef="Task_Orphan"/>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_Dangling">
+    <bpmndi:BPMNPlane id="BPMNPlane_Dangling" bpmnElement="Process_Dangling">
+      <bpmndi:BPMNShape id="Start_1_di" bpmnElement="Start_1">
+        <dc:Bounds x="152" y="102" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Orphan_di" bpmnElement="Task_Orphan">
+        <dc:Bounds x="280" y="80" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_Broken_di" bpmnElement="Flow_Broken">
+        <di:waypoint x="188" y="120"/>
+        <di:waypoint x="250" y="120"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Nowhere_di" bpmnElement="Flow_Nowhere">
+        <di:waypoint x="240" y="120"/>
+        <di:waypoint x="280" y="120"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

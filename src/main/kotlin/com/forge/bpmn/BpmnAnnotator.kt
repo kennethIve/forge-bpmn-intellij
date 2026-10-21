@@ -8,6 +8,11 @@ import com.intellij.psi.xml.XmlAttribute
 import com.intellij.psi.xml.XmlFile
 import com.intellij.psi.xml.XmlTag
 
+/**
+ * On-the-fly BPMN lint → editor underlines + Problems tool window.
+ * Prefer this over [BpmnInspection] for live Problems: Annotator runs without a
+ * project module (fixture / light opens). Do not register both extensions.
+ */
 class BpmnAnnotator : Annotator {
     override fun annotate(element: PsiElement, holder: AnnotationHolder) {
         val tag = element as? XmlTag ?: return
@@ -18,9 +23,12 @@ class BpmnAnnotator : Annotator {
         for (issue in issues) {
             val severity = if (issue.level == "error") HighlightSeverity.ERROR else HighlightSeverity.WARNING
             val target = issue.elementId?.let { findId(tag, it) } ?: tag
-            holder.newAnnotation(severity, issue.message)
+            val builder = holder.newAnnotation(severity, issue.message)
                 .range(target.textRange)
-                .create()
+            if (!issue.elementId.isNullOrBlank()) {
+                builder.withFix(BpmnSelectOnDiagramFix(issue.elementId))
+            }
+            builder.create()
         }
     }
 

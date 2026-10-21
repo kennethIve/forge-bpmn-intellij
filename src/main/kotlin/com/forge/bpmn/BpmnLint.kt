@@ -98,7 +98,10 @@ object BpmnLint {
             }
             for (flow in locals(process, "sequenceFlow")) {
                 val fid = attr(flow, "id")
-                if (attr(flow, "sourceRef").isEmpty() || attr(flow, "targetRef").isEmpty()) {
+                val src = attr(flow, "sourceRef")
+                val tgt = attr(flow, "targetRef")
+                // Blank OR non-resolving refs (fixture dangling-connection: Missing_* ids)
+                if (src.isEmpty() || tgt.isEmpty() || src !in ids || tgt !in ids) {
                     issues += Issue("flow-ends-$fid", fid, "error", "sequence-flow", "Sequence flow is missing source or target.")
                 }
                 val cond = locals(flow, "conditionExpression").firstOrNull()?.textContent?.trim().orEmpty()

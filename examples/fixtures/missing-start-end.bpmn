@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+    xmlns:modeler="http://camunda.org/schema/modeler/1.0"
+    id="Definitions_MissingStartEnd"
+    targetNamespace="http://forge.bpmn/fixtures"
+    exporter="Forge BPMN"
+    exporterVersion="0.4.5"
+    modeler:executionPlatform="Camunda Cloud"
+    modeler:executionPlatformVersion="8.6.0">
+  <!-- Intentional: no startEvent / endEvent — expect Missing start event / Missing end event -->
+  <bpmn:process id="Process_MissingStartEnd" name="Fixture: missing start/end" isExecutable="true">
+    <bpmn:task id="Task_Alone" name="Lonely task"/>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_MissingStartEnd">
+    <bpmndi:BPMNPlane id="BPMNPlane_MissingStartEnd" bpmnElement="Process_MissingStartEnd">
+      <bpmndi:BPMNShape id="Task_Alone_di" bpmnElement="Task_Alone">
+        <dc:Bounds x="180" y="100" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -11,6 +11,8 @@ import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorState
+import com.intellij.openapi.fileEditor.FileEditorManagerEvent
+import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.UserDataHolderBase
@@ -23,7 +25,11 @@ import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
+import org.cef.handler.CefKeyboardHandler
+import org.cef.handler.CefKeyboardHandlerAdapter
 import org.cef.handler.CefLoadHandlerAdapter
+import org.cef.misc.BoolRef
+import org.cef.misc.EventFlags
 import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Component
@@ -39,6 +45,11 @@ import javax.swing.JPanel
 import javax.swing.SwingConstants
 import javax.swing.SwingUtilities
 import kotlin.math.abs
+import com.intellij.openapi.vfs.newvfs.events.VFileEvent
+import com.intellij.openapi.vfs.newvfs.events.VFileContentChangeEvent
+import com.intellij.openapi.vfs.newvfs.BulkFileListener
+import com.intellij.openapi.vfs.VirtualFileManager
+import com.intellij.openapi.ui.Messages
 
 class BpmnFileEditor(
     private val project: Project,
@@ -48,17 +59,26 @@ class BpmnFileEditor(
     private var browser: JBCefBrowser? = null
     private var applyingFromJs = false
     private var loaded = false
+    private var pendingSelectId: String? = null
+    private var pendingSelectFallback = false
     private var diagramActive = true
+    private var askingReload = false
+    private var expectExternalChange = false
     private val themeConnection = project.messageBus.connect()
     private val documentListener = object : DocumentListener {
         override fun documentChanged(event: DocumentEvent) {
-            if (!applyingFromJs && loaded && diagramActive) {
-                SwingUtilities.invokeLater { pushXml() }
+            if (applyingFromJs || !loaded || !diagramActive) return
+            if (expectExternalChange) {
+                expectExternalChange = false
+                SwingUtilities.invokeLater { askReloadFromDisk() }
+                return
             }
+            SwingUtilities.invokeLater { pushXml() }
         }
     }
 
     init {
+        BpmnProblemsSelectionHook.install(project)
         panel.background = JBColor.PanelBackground
         if (!JBCefApp.isSupported()) {
             panel.add(JLabel("JCEF is required for the BPMN diagram editor.", SwingConstants.CENTER), BorderLayout.CENTER)
@@ -75,19 +95,74 @@ class BpmnFileEditor(
                 }
                 null
             }
+            val missingQuery = JBCefJSQuery.create(b as JBCefBrowserBase)
+            Disposer.register(b, missingQuery)
+            missingQuery.addHandler { payload ->
+                val id = decodeXmlPayload(payload).trim().trim('"')
+                onEdt {
+                    BpmnDiagramNavigator.openXmlAtElementId(project, file, id)
+                }
+                null
+            }
+            val selectionQuery = JBCefJSQuery.create(b as JBCefBrowserBase)
+            Disposer.register(b, selectionQuery)
+            selectionQuery.addHandler { payload ->
+                val id = decodeXmlPayload(payload).trim().trim('"')
+                onEdt {
+                    if (id.isBlank()) {
+                        BpmnDiagramNavigator.clearXmlSelectionHighlight(project, file)
+                    } else {
+                        BpmnDiagramNavigator.syncXmlFromCanvas(project, file, id)
+                    }
+                }
+                null
+            }
             b.jbCefClient.addLoadHandler(object : CefLoadHandlerAdapter() {
                 override fun onLoadEnd(br: CefBrowser?, frame: CefFrame?, status: Int) {
                     if (frame == null || !frame.isMain) return
                     loaded = true
                     val inject = "window.__onXmlChange = function(xml) { " +
                         query.inject("JSON.stringify(xml)") +
+                        " };" +
+                        "window.__onElementMissing = function(id) { " +
+                        missingQuery.inject("JSON.stringify(id)") +
+                        " };" +
+                        "window.__onSelectionChanged = function(id) { " +
+                        selectionQuery.inject("JSON.stringify(id || '')") +
                         " };"
                     br?.executeJavaScript(inject, br.url, 0)
                     SwingUtilities.invokeLater {
                         applyTheme()
                         pushXml()
                         attachCanvasZoom(b)
+                        flushPendingSelect()
                     }
+                }
+            }, b.cefBrowser)
+            b.jbCefClient.addKeyboardHandler(object : CefKeyboardHandlerAdapter() {
+                override fun onPreKeyEvent(
+                    browser: CefBrowser?,
+                    event: CefKeyboardHandler.CefKeyEvent?,
+                    isKeyboardShortcut: BoolRef?,
+                ): Boolean {
+                    if (browser == null || event == null) return false
+                    if (event.type != CefKeyboardHandler.CefKeyEvent.EventType.KEYEVENT_KEYDOWN) return false
+                    val control = (event.modifiers and EventFlags.EVENTFLAG_CONTROL_DOWN) != 0
+                    val meta = (event.modifiers and EventFlags.EVENTFLAG_COMMAND_DOWN) != 0
+                    val shift = (event.modifiers and EventFlags.EVENTFLAG_SHIFT_DOWN) != 0
+                    val alt = (event.modifiers and EventFlags.EVENTFLAG_ALT_DOWN) != 0
+                    if (alt || !(control || meta)) return false
+                    val code = event.windows_key_code
+                    val isZ = code == 'Z'.code || code == 'z'.code
+                    val isY = code == 'Y'.code || code == 'y'.code
+                    if (!isZ && !isY) return false
+                    // Let CEF/browser undo text in FEEL, Name, and other inputs.
+                    if (event.focus_on_editable_field) return false
+                    val redo = isY || (isZ && shift)
+                    val call = if (redo) "window.__diagramRedo && window.__diagramRedo();" else "window.__diagramUndo && window.__diagramUndo();"
+                    browser.executeJavaScript(call, browser.url, 0)
+                    isKeyboardShortcut?.set(true)
+                    return true
                 }
             }, b.cefBrowser)
             FileDocumentManager.getInstance().getDocument(file)?.addDocumentListener(documentListener, this)
@@ -101,6 +176,31 @@ class BpmnFileEditor(
             themeConnection.subscribe(LafManagerListener.TOPIC, LafManagerListener {
                 SwingUtilities.invokeLater { applyTheme() }
             })
+            themeConnection.subscribe(VirtualFileManager.VFS_CHANGES, object : BulkFileListener {
+                override fun after(events: List<VFileEvent>) {
+                    for (event in events) {
+                        if (event is VFileContentChangeEvent && event.file == file && !applyingFromJs) {
+                            expectExternalChange = true
+                        }
+                    }
+                }
+            })
+            // Flush canvas edits before leaving the BPMN tab; avoid pushXml while XML-focused
+            // so a round-trip select does not reimport and wipe commandStack.
+            themeConnection.subscribe(
+                FileEditorManagerListener.FILE_EDITOR_MANAGER,
+                object : FileEditorManagerListener {
+                    override fun selectionChanged(event: FileEditorManagerEvent) {
+                        if (event.oldEditor === this@BpmnFileEditor) {
+                            flushPersistFromJs()
+                            setDiagramActive(false)
+                        }
+                        if (event.newEditor === this@BpmnFileEditor) {
+                            setDiagramActive(true)
+                        }
+                    }
+                },
+            )
         }
     }
 
@@ -164,16 +264,6 @@ class BpmnFileEditor(
         return sb.toString()
     }
 
-    private fun pushXml() {
-        val b = browser ?: return
-        if (!loaded) return
-        val xml = String(file.contentsToByteArray(), Charsets.UTF_8)
-        b.cefBrowser.executeJavaScript(
-            "window.__loadXml && window.__loadXml(" + jsString(xml) + ");",
-            b.cefBrowser.url,
-            0,
-        )
-    }
 
     private fun notifyResized() {
         val b = browser ?: return
@@ -244,13 +334,101 @@ class BpmnFileEditor(
         )
     }
 
+    fun selectElement(elementId: String, fallbackToXml: Boolean = false) {
+        val b = browser ?: return
+        if (elementId.isBlank()) return
+        if (!loaded) {
+            pendingSelectId = elementId
+            pendingSelectFallback = fallbackToXml
+            return
+        }
+        val opts = if (fallbackToXml) "{fallback:true}" else "{fallback:false}"
+        b.cefBrowser.executeJavaScript(
+            "window.__selectElement && window.__selectElement(" + jsString(elementId) + "," + opts + ");",
+            b.cefBrowser.url,
+            0,
+        )
+    }
+
+    private fun flushPendingSelect() {
+        val id = pendingSelectId ?: return
+        pendingSelectId = null
+        val fallback = pendingSelectFallback
+        // __loadXml is async in JS; give import a moment before select/fallback.
+        SwingUtilities.invokeLater {
+            javax.swing.Timer(350) {
+                selectElement(id, fallback)
+            }.apply {
+                isRepeats = false
+                start()
+            }
+        }
+    }
+
+    private fun askReloadFromDisk() {
+        if (!loaded || askingReload || !file.isValid) return
+        askingReload = true
+        try {
+            val choice = Messages.showDialog(
+                project,
+                "This BPMN file was changed outside the editor. Reload the diagram from disk, or keep your version?",
+                "File changed on disk",
+                arrayOf("Reload", "Keep mine"),
+                0,
+                Messages.getQuestionIcon(),
+            )
+            when (choice) {
+                0 -> reloadFromFile()
+                1 -> {
+                    // Keep canvas XML: re-export from JS onto the document.
+                    val b = browser ?: return
+                    b.cefBrowser.executeJavaScript(
+                        "(async function(){ try { var r = await window.modeler.saveXML({format:true}); if (window.__onXmlChange) window.__onXmlChange(r.xml); } catch(e) {} })();",
+                        b.cefBrowser.url,
+                        0,
+                    )
+                }
+            }
+        } finally {
+            askingReload = false
+        }
+    }
+
     fun setDiagramActive(value: Boolean) {
+        if (diagramActive == value) {
+            if (value) SwingUtilities.invokeLater { pushXml() }
+            return
+        }
         diagramActive = value
         if (value) SwingUtilities.invokeLater { pushXml() }
     }
 
+    /** Push pending canvas XML to the document before the XML tab (or another file) takes focus. */
+    private fun flushPersistFromJs() {
+        val b = browser ?: return
+        if (!loaded) return
+        b.cefBrowser.executeJavaScript(
+            "window.__flushPersistNow && window.__flushPersistNow();",
+            b.cefBrowser.url,
+            0,
+        )
+    }
+
     fun reloadFromFile() {
-        pushXml()
+        // Force JS re-import so disk changes apply even when XML text matches a stale cache.
+        pushXml(force = true)
+    }
+
+    private fun pushXml(force: Boolean = false) {
+        val b = browser ?: return
+        if (!loaded) return
+        val xml = String(file.contentsToByteArray(), Charsets.UTF_8)
+        val call = if (force) {
+            "window.__loadXml && window.__loadXml(" + jsString(xml) + ", true);"
+        } else {
+            "window.__loadXml && window.__loadXml(" + jsString(xml) + ");"
+        }
+        b.cefBrowser.executeJavaScript(call, b.cefBrowser.url, 0)
     }
 
     override fun getComponent(): JComponent = panel
