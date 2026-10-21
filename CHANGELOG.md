@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.4.6]
+
+- Diagram Ctrl+C / Ctrl+V / Ctrl+X: same-file and cross-file paste with place/ghost (AWT clipboard bridge + mem seed on copy)
+- Properties panel toggle chevron: expanded shows `›`, collapsed shows `‹` (direction flipped)
+
 ## [0.4.5]
 
 - Cross-file diagram copy/paste: Ctrl+C writes `bpmn-js-clip----` payload to the system clipboard via JCEF→AWT bridge; Ctrl+V in another .bpmn file pastes from that payload (then click to place)

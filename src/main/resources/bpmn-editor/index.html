@@ -279,7 +279,7 @@
 <body>
   <div id="app">
     <div id="canvas"></div>
-    <button type="button" id="toggle-props" title="Hide properties" aria-expanded="true">‹</button>
+    <button type="button" id="toggle-props" title="Hide properties" aria-expanded="true">›</button>
     <aside id="properties"></aside>
   </div>
   <script src="camunda-cloud-modeler.production.min.js"></script>
@@ -797,7 +797,7 @@
     (function setupPropsToggle() {
       var app = document.getElementById("app"); var btn = document.getElementById("toggle-props");
       function apply(collapsed) {
-        app.classList.toggle("props-collapsed", collapsed); btn.textContent = collapsed ? "›" : "‹"; btn.title = collapsed ? "Show properties" : "Hide properties"; btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+        app.classList.toggle("props-collapsed", collapsed); btn.textContent = collapsed ? "‹" : "›"; btn.title = collapsed ? "Show properties" : "Hide properties"; btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
         try { localStorage.setItem("forge-bpmn-props-collapsed", collapsed ? "1" : "0"); } catch (e) {}
         window.setTimeout(function () { try { modeler.get("canvas").resized(); } catch (e) {} }, 40);
       }
