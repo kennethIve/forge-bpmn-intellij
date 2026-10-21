@@ -632,12 +632,48 @@
     var BPMN_CLIP_PREFIX = "bpmn-js-clip----";
     function diagramCopy() { diagramEditorAction("copy"); }
     // Paste enters create-mode until click; cut/place fire commandStack.changed → persist.
-    function diagramPaste() { diagramEditorAction("paste"); }
+    // Prefer in-memory clipboard tree so nativeCopyPaste (prio 2050) does not cancel
+    // pasteElements when tree is missing and then fail on navigator.clipboard in JCEF.
+    function diagramPaste() {
+      try {
+        var clip = modeler.get("clipboard");
+        var tree = clip && clip.get && clip.get();
+        if (tree) {
+          var copyPaste = modeler.get("copyPaste");
+          if (copyPaste && typeof copyPaste.paste === "function") {
+            copyPaste.paste({ tree: tree });
+            return;
+          }
+        }
+      } catch (e) {}
+      diagramEditorAction("paste");
+    }
     function diagramCut() { diagramEditorAction("cut"); }
+    // Camunda nativeCopyPaste revives $type objects into real moddle instances (bundled qG).
+    // Plain JSON.parse leaves plain objects; copyPaste.paste → _createElements then no-ops.
+    function moddleClipReviver(moddle) {
+      var cache = {};
+      return function (key, value) {
+        if (value && typeof value === "object" && typeof value.$type === "string") {
+          var id = value.id;
+          if (id && cache[id]) return cache[id];
+          var type = value.$type;
+          var attrs = Object.assign({}, value);
+          delete attrs.$type;
+          if (!moddle.getTypeDescriptor(type)) return;
+          var el = moddle.create(type, attrs);
+          if (id) cache[id] = el;
+          return el;
+        }
+        return value;
+      };
+    }
     function diagramPasteFromSystemClip(raw) {
       try {
         if (!raw || raw.indexOf(BPMN_CLIP_PREFIX) !== 0) return false;
-        var tree = JSON.parse(raw.substring(BPMN_CLIP_PREFIX.length));
+        var moddle = modeler.get("moddle");
+        if (!moddle) return false;
+        var tree = JSON.parse(raw.substring(BPMN_CLIP_PREFIX.length), moddleClipReviver(moddle));
         var copyPaste = modeler.get("copyPaste");
         if (!copyPaste || typeof copyPaste.paste !== "function") return false;
         copyPaste.paste({ tree: tree });
