@@ -1,6 +1,7 @@
 package com.forge.bpmn
 
 import com.intellij.openapi.application.ReadAction
+import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.editor.event.CaretEvent
 import com.intellij.openapi.editor.event.CaretListener
 import com.intellij.openapi.fileEditor.TextEditor
@@ -48,12 +49,16 @@ class BpmnXmlEditor(
 
     private fun syncSelectionFromCaret() {
         val project = delegate.editor.project ?: return
-        val id = ReadAction.compute<String?, RuntimeException> {
-            val document = delegate.editor.document
-            val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(document) ?: return@compute null
-            val offset = delegate.editor.caretModel.offset
-            val el = psiFile.findElementAt(offset) ?: return@compute null
-            resolveElementId(el)
+        val id = try {
+            ReadAction.nonBlocking<String?> {
+                val document = delegate.editor.document
+                val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(document) ?: return@nonBlocking null
+                val offset = delegate.editor.caretModel.offset
+                val el = psiFile.findElementAt(offset) ?: return@nonBlocking null
+                resolveElementId(el)
+            }.executeSynchronously()
+        } catch (_: ProcessCanceledException) {
+            null
         }
         if (id == null) {
             BpmnXmlSelectionHighlight.clear(delegate.editor)

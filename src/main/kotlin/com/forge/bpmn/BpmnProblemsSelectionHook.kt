@@ -6,6 +6,7 @@ import com.intellij.analysis.problemsView.toolWindow.ProblemsViewPanel
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.ReadAction
+import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
@@ -155,10 +156,14 @@ object BpmnProblemsSelectionHook {
         val offset = (lineStart + column.coerceAtLeast(0)).coerceIn(lineStart, lineEnd)
         // commitDocument may need write access — keep it outside ReadAction.
         PsiDocumentManager.getInstance(project).commitDocument(document)
-        return ReadAction.compute<String?, RuntimeException> {
-            val psiFile = PsiManager.getInstance(project).findFile(file) ?: return@compute null
-            val el = psiFile.findElementAt(offset) ?: return@compute null
-            resolveIdAttribute(el)
+        return try {
+            ReadAction.nonBlocking<String?> {
+                val psiFile = PsiManager.getInstance(project).findFile(file) ?: return@nonBlocking null
+                val el = psiFile.findElementAt(offset) ?: return@nonBlocking null
+                resolveIdAttribute(el)
+            }.executeSynchronously()
+        } catch (_: ProcessCanceledException) {
+            null
         }
     }
 

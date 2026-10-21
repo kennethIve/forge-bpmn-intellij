@@ -3,6 +3,7 @@ package com.forge.bpmn
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.ReadAction
+import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.editor.ScrollType
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
@@ -182,16 +183,20 @@ object BpmnDiagramNavigator {
 
     /** Inclusive-exclusive offsets of the `id` attribute value (quoted text range). */
     private fun findIdAttributeRange(project: Project, file: VirtualFile, elementId: String): Pair<Int, Int>? {
-        return ReadAction.compute<Pair<Int, Int>?, RuntimeException> {
-            val psi = PsiManager.getInstance(project).findFile(file) as? XmlFile ?: return@compute null
-            val root = psi.rootTag ?: return@compute null
-            val attr = findIdAttribute(root, elementId) ?: return@compute null
-            val value = attr.valueElement
-            if (value != null) {
-                Pair(value.textRange.startOffset, value.textRange.endOffset)
-            } else {
-                Pair(attr.textRange.startOffset, attr.textRange.endOffset)
-            }
+        return try {
+            ReadAction.nonBlocking<Pair<Int, Int>?> {
+                val psi = PsiManager.getInstance(project).findFile(file) as? XmlFile ?: return@nonBlocking null
+                val root = psi.rootTag ?: return@nonBlocking null
+                val attr = findIdAttribute(root, elementId) ?: return@nonBlocking null
+                val value = attr.valueElement
+                if (value != null) {
+                    Pair(value.textRange.startOffset, value.textRange.endOffset)
+                } else {
+                    Pair(attr.textRange.startOffset, attr.textRange.endOffset)
+                }
+            }.executeSynchronously()
+        } catch (_: ProcessCanceledException) {
+            null
         }
     }
 
