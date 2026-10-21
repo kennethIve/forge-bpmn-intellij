@@ -20,10 +20,9 @@ import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import com.intellij.openapi.wm.ToolWindowManager
-import com.intellij.ui.ColoredTreeCellRenderer
+import javax.swing.tree.DefaultTreeCellRenderer
 import com.intellij.ui.JBColor
 import com.intellij.ui.DoubleClickListener
-import com.intellij.ui.SimpleTextAttributes
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.concurrency.AppExecutorUtil
@@ -101,23 +100,27 @@ class BpmnExplorer(
         tree.showsRootHandles = true
         tree.emptyText.text = "No .bpmn files yet"
         tree.selectionModel.selectionMode = TreeSelectionModel.SINGLE_TREE_SELECTION
-        tree.cellRenderer = object : ColoredTreeCellRenderer() {
-            override fun customizeCellRenderer(
-                tree: JTree,
+        tree.cellRenderer = object : DefaultTreeCellRenderer() {
+            override fun getTreeCellRendererComponent(
+                tree: JTree?,
                 value: Any?,
                 selected: Boolean,
                 expanded: Boolean,
                 leaf: Boolean,
                 row: Int,
                 hasFocus: Boolean,
-            ) {
-                val node = (value as? DefaultMutableTreeNode)?.userObject as? BpmnNode ?: return
-                append(node.name, SimpleTextAttributes.REGULAR_ATTRIBUTES)
-                icon = when (node.kind) {
-                    BpmnNode.Kind.FILE -> BpmnIcons.FILE
-                    BpmnNode.Kind.ROOT -> AllIcons.Nodes.Module
-                    else -> AllIcons.Nodes.Folder
+            ): java.awt.Component {
+                val c = super.getTreeCellRendererComponent(tree, value, selected, expanded, leaf, row, hasFocus)
+                val node = (value as? DefaultMutableTreeNode)?.userObject as? BpmnNode
+                if (node != null) {
+                    text = node.name
+                    icon = when (node.kind) {
+                        BpmnNode.Kind.FILE -> BpmnIcons.FILE
+                        BpmnNode.Kind.ROOT -> AllIcons.Nodes.Module
+                        else -> AllIcons.Nodes.Folder
+                    }
                 }
+                return c
             }
         }
         TreeUtil.installActions(tree)

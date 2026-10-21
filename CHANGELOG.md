@@ -2,6 +2,7 @@
 
 ## [0.4.6]
 
+- Docs site: UX-signed feature cards (Problems/lint, Undo, diagram↔XML selection, same+cross-file C/V ghost→place, properties chevron); Marketplace CTA plugin/34301; Explorer uses DefaultTreeCellRenderer (drop Experimental ColoredTreeCellRenderer)
 - Cross-file Ctrl+V ghost: companion `lastDiagramClip` cache + Kotlin Cef KEYDOWN paste via base64 (`__diagramPasteFromSystemClipB64`); JBCefJSQuery Response kept as secondary; coalesce guards unchanged for same-file
 - EDT-safe PSI reads: replace `ReadAction.nonBlocking { }.executeSynchronously()` with `Application.runReadAction(Computable)` (Navigator / Problems / XmlEditor) — stops `syncSelectionFromCaret` assertion toast on OpenFile
 - Clear Marketplace Compatibility Warnings: avoid deprecated `ReadAction.compute(ThrowableComputable)` bytecode
