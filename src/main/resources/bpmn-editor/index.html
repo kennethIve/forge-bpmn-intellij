@@ -471,8 +471,48 @@
       clearPersistTimer();
       persistTimer = window.setTimeout(flushPersist, 180);
     }
+    function isFeelEditableTarget(el) {
+      var node = el;
+      while (node && node !== document) {
+        if (node.classList && (
+          node.classList.contains("cm-editor") ||
+          node.classList.contains("cm-content") ||
+          node.classList.contains("bio-properties-panel-feel-popup") ||
+          node.classList.contains("bio-properties-panel-feel-editor-container") ||
+          node.classList.contains("bio-properties-panel-feelers-editor") ||
+          node.classList.contains("bio-properties-panel-feelers-editor-container")
+        )) return true;
+        node = node.parentElement;
+      }
+      return false;
+    }
+    // FEEL/CodeMirror onInput is debounced in the properties panel. Blur runs its
+    // onBlur → debounce.flush → setValue → commandStack so the model matches the UI.
+    function flushFeelEditorDebounce() {
+      try {
+        var active = document.activeElement;
+        if (!active || !isFeelEditableTarget(active)) return null;
+        active.blur();
+        return active;
+      } catch (e) { return null; }
+    }
+    // After CM history undo/redo: flush panel debounce into the model, then persist now.
+    function persistFeelHistoryNow() {
+      var restore = flushFeelEditorDebounce();
+      userDirty = true;
+      clearPersistTimer();
+      flushPersist();
+      if (restore) {
+        try { restore.focus(); } catch (e) {}
+      }
+    }
+    function scheduleFeelHistoryPersist() {
+      window.setTimeout(persistFeelHistoryNow, 0);
+    }
     // Immediate flush (tab leave / deactivate) — skip debounce so XML tab sees canvas edits.
+    // Also flush pending FEEL debounce first so disk cannot lag the condition field UI.
     window.__flushPersistNow = function () {
+      flushFeelEditorDebounce();
       if (applying || simulating || !userDirty) return;
       clearPersistTimer();
       flushPersist();
@@ -539,7 +579,12 @@
       var isY = key === "y" || e.code === "KeyY";
       if (!isZ && !isY) return;
       var redo = isY || (isZ && e.shiftKey);
-      if (isEditableTarget(e.target)) return;
+      // FEEL/CM keep native text undo; do not call diagram commandStack.undo.
+      // After CM history applies, flush debounced setValue + persist so disk matches UI.
+      if (isEditableTarget(e.target)) {
+        if (isFeelEditableTarget(e.target)) scheduleFeelHistoryPersist();
+        return;
+      }
       e.preventDefault(); e.stopPropagation();
       if (redo) diagramRedo(); else diagramUndo();
     }, true);
