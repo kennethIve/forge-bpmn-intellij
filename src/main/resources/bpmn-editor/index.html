@@ -455,6 +455,7 @@
     // Only write XML back after a real user edit. Import / post-import repair
     // must not autosave a cleaned model over fixtures (dangling refs, edge DI).
     var userDirty = false;
+    var loadGen = 0;
     function clearPersistTimer() {
       if (persistTimer) { window.clearTimeout(persistTimer); persistTimer = null; }
     }
@@ -463,17 +464,25 @@
     }
     async function flushPersist() {
       if (applying || simulating || !userDirty) return;
-      try { var result = await modeler.saveXML({ format: true }); lastAppliedXml = result.xml; paintLint(lintBpmnXml(result.xml)); if (window.__onXmlChange) window.__onXmlChange(result.xml); } catch (err) {}
+      try { var result = await modeler.saveXML({ format: true }); lastAppliedXml = result.xml; userDirty = false; paintLint(lintBpmnXml(result.xml)); if (window.__onXmlChange) window.__onXmlChange(result.xml); } catch (err) {}
     }
     function persist() {
       if (applying || simulating || !userDirty) return;
       clearPersistTimer();
       persistTimer = window.setTimeout(flushPersist, 180);
     }
+    // Immediate flush (tab leave / deactivate) — skip debounce so XML tab sees canvas edits.
+    window.__flushPersistNow = function () {
+      if (applying || simulating || !userDirty) return;
+      clearPersistTimer();
+      flushPersist();
+    };
     modeler.on("commandStack.changed", function () {
       if (applying || simulating) return;
       try {
         var stack = modeler.get("commandStack");
+        // Gate empty stacks so import/clear does not autosave. Undo-to-empty is
+        // handled in diagramUndo (explicit persist) because canUndo is then false.
         if (!stack || !stack.canUndo || !stack.canUndo()) return;
       } catch (e) { return; }
       userDirty = true;
@@ -485,13 +494,40 @@
         if (node.isContentEditable) return true;
         var tag = (node.tagName || "").toLowerCase();
         if (tag === "input" || tag === "textarea" || tag === "select") return true;
-        if (node.classList && (node.classList.contains("cm-editor") || node.classList.contains("cm-content") || node.classList.contains("bio-properties-panel-input"))) return true;
+        if (node.classList && (
+          node.classList.contains("cm-editor") ||
+          node.classList.contains("cm-content") ||
+          node.classList.contains("bio-properties-panel-input") ||
+          node.classList.contains("bio-properties-panel-feel-popup") ||
+          node.classList.contains("bio-properties-panel-feel-editor-container") ||
+          node.classList.contains("bio-properties-panel-feelers-editor")
+        )) return true;
         node = node.parentElement;
       }
       return false;
     }
-    function diagramUndo() { try { var stack = modeler.get("commandStack"); if (stack && stack.canUndo && stack.canUndo()) stack.undo(); } catch (e) {} }
-    function diagramRedo() { try { var stack = modeler.get("commandStack"); if (stack && stack.canRedo && stack.canRedo()) stack.redo(); } catch (e) {} }
+    function markDirtyAndPersist() {
+      userDirty = true;
+      persist();
+    }
+    // Persist after undo/redo even when the stack is empty afterward — otherwise
+    // XML on disk keeps the undone edit and the next __loadXml restores it.
+    function diagramUndo() {
+      try {
+        var stack = modeler.get("commandStack");
+        if (!stack || !stack.canUndo || !stack.canUndo()) return;
+        stack.undo();
+        markDirtyAndPersist();
+      } catch (e) {}
+    }
+    function diagramRedo() {
+      try {
+        var stack = modeler.get("commandStack");
+        if (!stack || !stack.canRedo || !stack.canRedo()) return;
+        stack.redo();
+        markDirtyAndPersist();
+      } catch (e) {}
+    }
     window.__diagramUndo = diagramUndo;
     window.__diagramRedo = diagramRedo;
     window.__handleDiagramUndoKey = function (redo) { if (isEditableTarget(document.activeElement)) return false; if (redo) diagramRedo(); else diagramUndo(); return true; };
@@ -620,6 +656,7 @@
     window.__loadXml = async function (xml, force) {
       if (xml == null) return;
       if (!force && lastAppliedXml !== null && xml === lastAppliedXml) return;
+      var gen = ++loadGen;
       applying = true;
       userDirty = false;
       clearPersistTimer();
@@ -634,17 +671,20 @@
         // Drop import / repair commands so they cannot flush a cleaned model to disk.
         clearCommandStackQuiet();
         window.setTimeout(function () {
-          clearPersistTimer();
-          userDirty = false;
-          clearCommandStackQuiet();
+          if (gen !== loadGen) return;
           if (pendingSelect) {
             var p = pendingSelect; pendingSelect = null;
             selectElement(p.id, { fallback: p.fallback });
           }
+          // Do not wipe a user edit that landed before this tick.
+          if (userDirty || gen !== loadGen) return;
+          clearPersistTimer();
+          clearCommandStackQuiet();
         }, 0);
         window.setTimeout(function () {
+          // Fast edits right after open must keep their stack + dirty bit.
+          if (gen !== loadGen || userDirty) return;
           clearPersistTimer();
-          userDirty = false;
           clearCommandStackQuiet();
         }, 300);
       }

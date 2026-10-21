@@ -11,6 +11,8 @@ import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorState
+import com.intellij.openapi.fileEditor.FileEditorManagerEvent
+import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.UserDataHolderBase
@@ -183,6 +185,22 @@ class BpmnFileEditor(
                     }
                 }
             })
+            // Flush canvas edits before leaving the BPMN tab; avoid pushXml while XML-focused
+            // so a round-trip select does not reimport and wipe commandStack.
+            themeConnection.subscribe(
+                FileEditorManagerListener.FILE_EDITOR_MANAGER,
+                object : FileEditorManagerListener {
+                    override fun selectionChanged(event: FileEditorManagerEvent) {
+                        if (event.oldEditor === this@BpmnFileEditor) {
+                            flushPersistFromJs()
+                            setDiagramActive(false)
+                        }
+                        if (event.newEditor === this@BpmnFileEditor) {
+                            setDiagramActive(true)
+                        }
+                    }
+                },
+            )
         }
     }
 
@@ -377,8 +395,23 @@ class BpmnFileEditor(
     }
 
     fun setDiagramActive(value: Boolean) {
+        if (diagramActive == value) {
+            if (value) SwingUtilities.invokeLater { pushXml() }
+            return
+        }
         diagramActive = value
         if (value) SwingUtilities.invokeLater { pushXml() }
+    }
+
+    /** Push pending canvas XML to the document before the XML tab (or another file) takes focus. */
+    private fun flushPersistFromJs() {
+        val b = browser ?: return
+        if (!loaded) return
+        b.cefBrowser.executeJavaScript(
+            "window.__flushPersistNow && window.__flushPersistNow();",
+            b.cefBrowser.url,
+            0,
+        )
     }
 
     fun reloadFromFile() {
