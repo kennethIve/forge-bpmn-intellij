@@ -279,7 +279,7 @@
 <body>
   <div id="app">
     <div id="canvas"></div>
-    <button type="button" id="toggle-props" title="Hide properties" aria-expanded="true">‹</button>
+    <button type="button" id="toggle-props" title="Hide properties" aria-expanded="true">›</button>
     <aside id="properties"></aside>
   </div>
   <script src="camunda-cloud-modeler.production.min.js"></script>
@@ -622,6 +622,125 @@
     }
     window.__diagramUndo = diagramUndo;
     window.__diagramRedo = diagramRedo;
+    function diagramEditorAction(name) {
+      try {
+        var actions = modeler.get("editorActions");
+        if (!actions || typeof actions.trigger !== "function") return;
+        actions.trigger(name);
+      } catch (e) {}
+    }
+    var BPMN_CLIP_PREFIX = "bpmn-js-clip----";
+    function diagramCopy() { diagramEditorAction("copy"); }
+    // Paste enters create-mode until click; cut/place fire commandStack.changed → persist.
+    // Prefer in-memory clipboard tree so nativeCopyPaste (prio 2050) does not cancel
+    // pasteElements when tree is missing and then fail on navigator.clipboard in JCEF.
+    // Cef KEYDOWN + page keydown can both fire once; coalesce so cross-file does not
+    // place two overlapping shapes. Do not arm the time guard before the AWT Response
+    // arrives — that callback is the intentional paste.
+    var pasteGuardUntil = 0;
+    var pasteRequestInFlight = false;
+    function createModeActive() {
+      try {
+        var dragging = modeler.get("dragging");
+        var ctx = dragging && dragging.context && dragging.context();
+        if (ctx && typeof ctx.prefix === "string" && ctx.prefix.indexOf("create") === 0) return true;
+      } catch (e) {}
+      return false;
+    }
+    function diagramPaste() {
+      if (createModeActive() || Date.now() < pasteGuardUntil || pasteRequestInFlight) return;
+      try {
+        var clipboard = modeler.get("clipboard");
+        var tree = clipboard && clipboard.get && clipboard.get();
+        if (tree) {
+          var copyPaste = modeler.get("copyPaste");
+          if (copyPaste && typeof copyPaste.paste === "function") {
+            pasteGuardUntil = Date.now() + 400;
+            copyPaste.paste({ tree: tree });
+            return;
+          }
+        }
+      } catch (e) {}
+      // nativeCopyPaste sets hints.clip=false so mem stays empty after C; cross-file
+      // and same-file-without-mem ask Kotlin (secondary Response path; Cef KEYDOWN uses B64).
+      if (typeof window.__requestSystemClipPaste === "function") {
+        pasteRequestInFlight = true;
+        window.__requestSystemClipPaste();
+        setTimeout(function () { pasteRequestInFlight = false; }, 1500);
+      }
+    }
+    function diagramCut() { diagramEditorAction("cut"); }
+    // Camunda nativeCopyPaste revives $type objects into real moddle instances (bundled qG).
+    // Plain JSON.parse leaves plain objects; copyPaste.paste → _createElements then no-ops.
+    function moddleClipReviver(moddle) {
+      var cache = {};
+      return function (key, value) {
+        if (value && typeof value === "object" && typeof value.$type === "string") {
+          var id = value.id;
+          if (id && cache[id]) return cache[id];
+          var type = value.$type;
+          var attrs = Object.assign({}, value);
+          delete attrs.$type;
+          if (!moddle.getTypeDescriptor(type)) return;
+          var el = moddle.create(type, attrs);
+          if (id) cache[id] = el;
+          return el;
+        }
+        return value;
+      };
+    }
+    function diagramPasteFromSystemClip(raw) {
+      pasteRequestInFlight = false;
+      try {
+        if (!raw || raw.indexOf(BPMN_CLIP_PREFIX) !== 0) return false;
+        // Another paste already entered create-mode (duplicate key handler); skip.
+        if (createModeActive() || Date.now() < pasteGuardUntil) return false;
+        var moddle = modeler.get("moddle");
+        if (!moddle) return false;
+        var tree = JSON.parse(raw.substring(BPMN_CLIP_PREFIX.length), moddleClipReviver(moddle));
+        var copyPaste = modeler.get("copyPaste");
+        if (!copyPaste || typeof copyPaste.paste !== "function") return false;
+        pasteGuardUntil = Date.now() + 400;
+        copyPaste.paste({ tree: tree });
+        return true;
+      } catch (e) { return false; }
+    }
+    // Kotlin Cef KEYDOWN paste: UTF-8 payload as base64 avoids jsString breakage on large trees.
+    function diagramPasteFromSystemClipB64(b64) {
+      pasteRequestInFlight = false;
+      try {
+        if (!b64) return false;
+        var bin = atob(b64);
+        var bytes = new Uint8Array(bin.length);
+        for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        var raw = (typeof TextDecoder !== "undefined")
+          ? new TextDecoder("utf-8").decode(bytes)
+          : decodeURIComponent(escape(bin));
+        return diagramPasteFromSystemClip(raw);
+      } catch (e) { return false; }
+    }
+    // Mirror nativeCopyPaste into IDEA AWT clipboard so Ctrl+C in file A → Ctrl+V in file B works.
+    // Also set diagram-js clipboard: nativeCopyPaste sets hints.clip=false after writing
+    // navigator.clipboard, so the stock clipboard module skips clipboard.set(tree).
+    try {
+      modeler.get("eventBus").on("copyPaste.elementsCopied", function (e) {
+        try {
+          if (!e || !e.tree) return;
+          try {
+            var clip = modeler.get("clipboard");
+            if (clip && typeof clip.set === "function") clip.set(e.tree);
+          } catch (setErr) {}
+          if (typeof window.__onDiagramClip === "function") {
+            window.__onDiagramClip(BPMN_CLIP_PREFIX + JSON.stringify(e.tree));
+          }
+        } catch (err) {}
+      });
+    } catch (e) {}
+    window.__diagramCopy = diagramCopy;
+    window.__diagramPaste = diagramPaste;
+    window.__diagramCut = diagramCut;
+    window.__diagramPasteFromSystemClip = diagramPasteFromSystemClip;
+    window.__diagramPasteFromSystemClipB64 = diagramPasteFromSystemClipB64;
     window.__handleDiagramUndoKey = function (redo) { if (isEditableTarget(document.activeElement)) return false; if (redo) diagramRedo(); else diagramUndo(); return true; };
     window.addEventListener("keydown", function (e) {
       var mod = e.ctrlKey || e.metaKey;
@@ -629,15 +748,21 @@
       var key = (e.key || "").toLowerCase();
       var isZ = key === "z" || e.code === "KeyZ";
       var isY = key === "y" || e.code === "KeyY";
-      if (!isZ && !isY) return;
-      var redo = isY || (isZ && e.shiftKey);
-      // FEEL/CM keep native text undo; do not call diagram commandStack.undo.
+      var isC = key === "c" || e.code === "KeyC";
+      var isV = key === "v" || e.code === "KeyV";
+      var isX = key === "x" || e.code === "KeyX";
+      if (!isZ && !isY && !isC && !isV && !isX) return;
+      // FEEL/CM keep native text undo/copy/paste/cut.
       // After CM history applies, flush debounced setValue + persist so disk matches UI.
       if (isEditableTarget(e.target)) {
-        if (isFeelEditableTarget(e.target)) scheduleFeelHistoryPersist();
+        if ((isZ || isY) && isFeelEditableTarget(e.target)) scheduleFeelHistoryPersist();
         return;
       }
       e.preventDefault(); e.stopPropagation();
+      if (isC) { diagramCopy(); return; }
+      if (isV) { diagramPaste(); return; }
+      if (isX) { diagramCut(); return; }
+      var redo = isY || (isZ && e.shiftKey);
       if (redo) diagramRedo(); else diagramUndo();
     }, true);
     function fit() { try { modeler.get("canvas").zoom("fit-viewport", "auto"); } catch (e) {} }
@@ -708,7 +833,7 @@
     (function setupPropsToggle() {
       var app = document.getElementById("app"); var btn = document.getElementById("toggle-props");
       function apply(collapsed) {
-        app.classList.toggle("props-collapsed", collapsed); btn.textContent = collapsed ? "›" : "‹"; btn.title = collapsed ? "Show properties" : "Hide properties"; btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+        app.classList.toggle("props-collapsed", collapsed); btn.textContent = collapsed ? "‹" : "›"; btn.title = collapsed ? "Show properties" : "Hide properties"; btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
         try { localStorage.setItem("forge-bpmn-props-collapsed", collapsed ? "1" : "0"); } catch (e) {}
         window.setTimeout(function () { try { modeler.get("canvas").resized(); } catch (e) {} }, 40);
       }

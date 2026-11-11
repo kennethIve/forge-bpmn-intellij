@@ -1,8 +1,8 @@
 package com.forge.bpmn
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.util.Computable
 import com.intellij.openapi.application.ModalityState
-import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.editor.ScrollType
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
@@ -182,17 +182,17 @@ object BpmnDiagramNavigator {
 
     /** Inclusive-exclusive offsets of the `id` attribute value (quoted text range). */
     private fun findIdAttributeRange(project: Project, file: VirtualFile, elementId: String): Pair<Int, Int>? {
-        return ReadAction.compute<Pair<Int, Int>?, RuntimeException> {
-            val psi = PsiManager.getInstance(project).findFile(file) as? XmlFile ?: return@compute null
-            val root = psi.rootTag ?: return@compute null
-            val attr = findIdAttribute(root, elementId) ?: return@compute null
+        return ApplicationManager.getApplication().runReadAction(Computable {
+            val psi = PsiManager.getInstance(project).findFile(file) as? XmlFile ?: return@Computable null
+            val root = psi.rootTag ?: return@Computable null
+            val attr = findIdAttribute(root, elementId) ?: return@Computable null
             val value = attr.valueElement
             if (value != null) {
                 Pair(value.textRange.startOffset, value.textRange.endOffset)
             } else {
                 Pair(attr.textRange.startOffset, attr.textRange.endOffset)
             }
-        }
+        })
     }
 
     private fun findIdAttribute(root: XmlTag, id: String): XmlAttribute? {

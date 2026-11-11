@@ -2,18 +2,26 @@ package com.forge.bpmn
 
 import com.intellij.ide.ui.LafManager
 import com.intellij.ide.ui.LafManagerListener
+import com.intellij.codeHighlighting.BackgroundEditorHighlighter
+import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.command.CommandProcessor
+import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditor
+import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.FileEditorState
 import com.intellij.openapi.fileEditor.FileEditorManagerEvent
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
+import com.intellij.openapi.fileEditor.FileEditorWithTextEditors
+import com.intellij.openapi.fileEditor.TextEditor
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Computable
+import com.intellij.psi.PsiManager
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.UserDataHolderBase
 import com.intellij.openapi.vfs.VirtualFile
@@ -31,6 +39,10 @@ import org.cef.handler.CefLoadHandlerAdapter
 import org.cef.misc.BoolRef
 import org.cef.misc.EventFlags
 import java.awt.BorderLayout
+import java.util.Base64
+import java.awt.Toolkit
+import java.awt.datatransfer.DataFlavor
+import java.awt.datatransfer.StringSelection
 import java.awt.Color
 import java.awt.Component
 import java.awt.MouseInfo
@@ -54,7 +66,7 @@ import com.intellij.openapi.ui.Messages
 class BpmnFileEditor(
     private val project: Project,
     private val file: VirtualFile,
-) : UserDataHolderBase(), FileEditor {
+) : UserDataHolderBase(), FileEditor, FileEditorWithTextEditors {
     private val panel = JPanel(BorderLayout())
     private var browser: JBCefBrowser? = null
     private var applyingFromJs = false
@@ -117,6 +129,29 @@ class BpmnFileEditor(
                 }
                 null
             }
+            // Cross-file shape clipboard: JS writes bpmn-js clip payload → AWT system clipboard.
+            val clipQuery = JBCefJSQuery.create(b as JBCefBrowserBase)
+            Disposer.register(b, clipQuery)
+            clipQuery.addHandler { payload ->
+                val text = decodeXmlPayload(payload)
+                if (text.startsWith(BPMN_CLIP_PREFIX)) {
+                    lastDiagramClip = text
+                }
+                onEdt { writeSystemClipboardText(text) }
+                null
+            }
+            // Secondary path: JS asks Kotlin for clip when mem is empty (page keydown).
+            // Primary path is Cef KEYDOWN → pasteDiagramClipboard (cache/AWT → base64 JS).
+            val pasteRequestQuery = JBCefJSQuery.create(b as JBCefBrowserBase)
+            Disposer.register(b, pasteRequestQuery)
+            pasteRequestQuery.addHandler { _ ->
+                val text = resolveDiagramClipText()
+                if (text != null) {
+                    JBCefJSQuery.Response(text)
+                } else {
+                    JBCefJSQuery.Response("")
+                }
+            }
             b.jbCefClient.addLoadHandler(object : CefLoadHandlerAdapter() {
                 override fun onLoadEnd(br: CefBrowser?, frame: CefFrame?, status: Int) {
                     if (frame == null || !frame.isMain) return
@@ -129,6 +164,16 @@ class BpmnFileEditor(
                         " };" +
                         "window.__onSelectionChanged = function(id) { " +
                         selectionQuery.inject("JSON.stringify(id || '')") +
+                        " };" +
+                        "window.__onDiagramClip = function(text) { " +
+                        clipQuery.inject("JSON.stringify(text)") +
+                        " };" +
+                        "window.__requestSystemClipPaste = function() { " +
+                        pasteRequestQuery.inject(
+                            "'1'",
+                            "function(response){if(response){window.__diagramPasteFromSystemClip&&window.__diagramPasteFromSystemClip(response);}}",
+                            "function(c,m){}",
+                        ) +
                         " };"
                     br?.executeJavaScript(inject, br.url, 0)
                     SwingUtilities.invokeLater {
@@ -155,12 +200,29 @@ class BpmnFileEditor(
                     val code = event.windows_key_code
                     val isZ = code == 'Z'.code || code == 'z'.code
                     val isY = code == 'Y'.code || code == 'y'.code
-                    if (!isZ && !isY) return false
-                    // Let CEF/browser undo text in FEEL, Name, and other inputs.
+                    val isC = code == 'C'.code || code == 'c'.code
+                    val isV = code == 'V'.code || code == 'v'.code
+                    val isX = code == 'X'.code || code == 'x'.code
+                    if (!isZ && !isY && !isC && !isV && !isX) return false
+                    // Let CEF/browser handle text undo/copy/paste/cut in FEEL, Name, etc.
                     if (event.focus_on_editable_field) return false
-                    val redo = isY || (isZ && shift)
-                    val call = if (redo) "window.__diagramRedo && window.__diagramRedo();" else "window.__diagramUndo && window.__diagramUndo();"
-                    browser.executeJavaScript(call, browser.url, 0)
+                    when {
+                        // Cross-file: Kotlin reads companion cache / AWT and injects via base64.
+                        // Same-file with empty cache falls through to __diagramPaste (mem-first).
+                        isV -> pasteDiagramClipboard(browser)
+                        else -> {
+                            val call = when {
+                                isC -> "window.__diagramCopy && window.__diagramCopy();"
+                                isX -> "window.__diagramCut && window.__diagramCut();"
+                                else -> {
+                                    val redo = isY || (isZ && shift)
+                                    if (redo) "window.__diagramRedo && window.__diagramRedo();"
+                                    else "window.__diagramUndo && window.__diagramUndo();"
+                                }
+                            }
+                            browser.executeJavaScript(call, browser.url, 0)
+                        }
+                    }
                     isKeyboardShortcut?.set(true)
                     return true
                 }
@@ -197,10 +259,66 @@ class BpmnFileEditor(
                         }
                         if (event.newEditor === this@BpmnFileEditor) {
                             setDiagramActive(true)
+                            requestProblemsHighlight()
                         }
                     }
                 },
             )
+        }
+    }
+
+
+    companion object {
+        private const val BPMN_CLIP_PREFIX = "bpmn-js-clip----"
+
+        /** Shared across editors so file A copy is visible to file B paste without relying on AWT alone. */
+        @Volatile
+        var lastDiagramClip: String? = null
+    }
+
+    private fun resolveDiagramClipText(): String? {
+        val cached = lastDiagramClip
+        if (cached != null && cached.startsWith(BPMN_CLIP_PREFIX)) return cached
+        val awt = readSystemClipboardText()
+        return if (awt != null && awt.startsWith(BPMN_CLIP_PREFIX)) awt else null
+    }
+
+    /** Prefer companion cache (cross-file), then AWT; fall back to in-modeler clipboard. */
+    private fun pasteDiagramClipboard(browser: CefBrowser) {
+        val text = resolveDiagramClipText()
+        if (text != null) {
+            val b64 = Base64.getEncoder().encodeToString(text.toByteArray(Charsets.UTF_8))
+            browser.executeJavaScript(
+                "window.__diagramPasteFromSystemClipB64 && window.__diagramPasteFromSystemClipB64(" +
+                    jsString(b64) +
+                    ");",
+                browser.url,
+                0,
+            )
+        } else {
+            browser.executeJavaScript(
+                "window.__diagramPaste && window.__diagramPaste();",
+                browser.url,
+                0,
+            )
+        }
+    }
+
+    private fun writeSystemClipboardText(text: String) {
+        if (text.isEmpty()) return
+        try {
+            Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(text), null)
+        } catch (_: Exception) {
+        }
+    }
+
+    private fun readSystemClipboardText(): String? {
+        return try {
+            val clip = Toolkit.getDefaultToolkit().systemClipboard
+            if (!clip.isDataFlavorAvailable(DataFlavor.stringFlavor)) return null
+            clip.getData(DataFlavor.stringFlavor) as? String
+        } catch (_: Exception) {
+            null
         }
     }
 
@@ -253,11 +371,15 @@ class BpmnFileEditor(
         sb.append('"')
         for (ch in value) {
             when (ch) {
-                Char(92) -> { sb.append(Char(92)); sb.append(Char(92)) }
-                '"' -> { sb.append(Char(92)); sb.append('"') }
-                Char(10) -> { sb.append(Char(92)); sb.append('n') }
-                Char(13) -> { }
-                else -> sb.append(ch)
+                '\\' -> sb.append("\\\\")
+                '"' -> sb.append("\\\"")
+                '\n' -> sb.append("\\n")
+                '\r' -> sb.append("\\r")
+                '\t' -> sb.append("\\t")
+                else -> {
+                    val code = ch.code
+                    if (code < 0x20) sb.append("\\u%04x".format(code)) else sb.append(ch)
+                }
             }
         }
         sb.append('"')
@@ -429,6 +551,46 @@ class BpmnFileEditor(
             "window.__loadXml && window.__loadXml(" + jsString(xml) + ");"
         }
         b.cefBrowser.executeJavaScript(call, b.cefBrowser.url, 0)
+    }
+
+    /**
+     * The BPMN tab is not a [TextEditor], so the daemon skips it unless we expose the
+     * companion XML editor. Without this, Problems → File stays empty until the XML tab
+     * is selected.
+     */
+    private fun xmlTextEditor(): TextEditor? {
+        if (project.isDisposed || !file.isValid) return null
+        return FileEditorManager.getInstance(project).getEditors(file)
+            .filterIsInstance<TextEditor>()
+            .firstOrNull { !it.editor.isDisposed }
+    }
+
+    override fun getEmbeddedEditors(): List<Editor> {
+        val editor = xmlTextEditor()?.editor ?: return emptyList()
+        return listOf(editor)
+    }
+
+    override fun getBackgroundHighlighter(): BackgroundEditorHighlighter? {
+        return xmlTextEditor()?.backgroundHighlighter
+    }
+
+    override fun selectNotify() {
+        requestProblemsHighlight()
+    }
+
+    private fun requestProblemsHighlight(retryIfXmlMissing: Boolean = true) {
+        if (project.isDisposed || !file.isValid) return
+        if (xmlTextEditor() == null) {
+            if (retryIfXmlMissing) {
+                SwingUtilities.invokeLater { requestProblemsHighlight(retryIfXmlMissing = false) }
+            }
+            return
+        }
+        val psi = ApplicationManager.getApplication().runReadAction(Computable {
+            if (project.isDisposed || !file.isValid) null
+            else PsiManager.getInstance(project).findFile(file)
+        }) ?: return
+        DaemonCodeAnalyzer.getInstance(project).restart(psi, "BpmnFileEditor.open")
     }
 
     override fun getComponent(): JComponent = panel

@@ -1,7 +1,19 @@
 # Changelog
 
+## [0.4.6]
+
+- Problems Current File: highlight on BPMN-tab open via `FileEditorWithTextEditors` + daemon restart, so lint appears without switching to XML
+- Docs site: UX-signed feature cards (Problems/lint, Undo, diagram↔XML selection, same+cross-file C/V ghost→place, properties chevron); Marketplace CTA plugin/34301; Explorer uses DefaultTreeCellRenderer (drop Experimental ColoredTreeCellRenderer)
+- Cross-file Ctrl+V ghost: companion `lastDiagramClip` cache + Kotlin Cef KEYDOWN paste via base64 (`__diagramPasteFromSystemClipB64`); JBCefJSQuery Response kept as secondary; coalesce guards unchanged for same-file
+- EDT-safe PSI reads: replace `ReadAction.nonBlocking { }.executeSynchronously()` with `Application.runReadAction(Computable)` (Navigator / Problems / XmlEditor) — stops `syncSelectionFromCaret` assertion toast on OpenFile
+- Clear Marketplace Compatibility Warnings: avoid deprecated `ReadAction.compute(ThrowableComputable)` bytecode
+- Diagram Ctrl+C / Ctrl+V / Ctrl+X: same-file and cross-file paste with place/ghost (AWT clipboard bridge + mem seed on copy)
+- Properties panel toggle chevron: expanded shows `›`, collapsed shows `‹` (direction flipped)
+
 ## [0.4.5]
 
+- Cross-file diagram copy/paste: Ctrl+C writes `bpmn-js-clip----` payload to the system clipboard via JCEF→AWT bridge; Ctrl+V in another .bpmn file pastes from that payload (then click to place)
+- Diagram Ctrl+C / Ctrl+V / Ctrl+X (and Cmd): copy/paste/cut shapes via bpmn-js editorActions when focus is on the canvas; text fields keep native clipboard
 - Diagram ↔ XML selection sync: canvas select moves XML caret to the element `id` and paints solid `#3574F0` + white text (no transparency / no underline stack); XML caret on `id` selects on canvas; selection outline + bendpoints use solid `#3574F0` / 2px in Light and Dark
 - Fix Problems row click after XML navigate: drop the “focus must be in Problems tree” gate — mark mouse-presses on the tree via `AWTEventListener` so a single click still moves the caret when focus is on XML; keep `ReadAction` wrappers and force-caret on `openXmlAtElementId`
 - Fix consecutive Problems clicks on dangling (no-shape) flows: always force XML caret to the new element `id` even when the XML tab is already focused; wrap PSI reads (`syncSelectionFromCaret` / `resolveElementId` / `findIdAttributeOffset`) in `ReadAction` to stop the IDE error toast
