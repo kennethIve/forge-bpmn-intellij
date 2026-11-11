@@ -2,18 +2,26 @@ package com.forge.bpmn
 
 import com.intellij.ide.ui.LafManager
 import com.intellij.ide.ui.LafManagerListener
+import com.intellij.codeHighlighting.BackgroundEditorHighlighter
+import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.command.CommandProcessor
+import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditor
+import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.FileEditorState
 import com.intellij.openapi.fileEditor.FileEditorManagerEvent
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
+import com.intellij.openapi.fileEditor.FileEditorWithTextEditors
+import com.intellij.openapi.fileEditor.TextEditor
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Computable
+import com.intellij.psi.PsiManager
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.UserDataHolderBase
 import com.intellij.openapi.vfs.VirtualFile
@@ -58,7 +66,7 @@ import com.intellij.openapi.ui.Messages
 class BpmnFileEditor(
     private val project: Project,
     private val file: VirtualFile,
-) : UserDataHolderBase(), FileEditor {
+) : UserDataHolderBase(), FileEditor, FileEditorWithTextEditors {
     private val panel = JPanel(BorderLayout())
     private var browser: JBCefBrowser? = null
     private var applyingFromJs = false
@@ -251,6 +259,7 @@ class BpmnFileEditor(
                         }
                         if (event.newEditor === this@BpmnFileEditor) {
                             setDiagramActive(true)
+                            requestProblemsHighlight()
                         }
                     }
                 },
@@ -542,6 +551,46 @@ class BpmnFileEditor(
             "window.__loadXml && window.__loadXml(" + jsString(xml) + ");"
         }
         b.cefBrowser.executeJavaScript(call, b.cefBrowser.url, 0)
+    }
+
+    /**
+     * The BPMN tab is not a [TextEditor], so the daemon skips it unless we expose the
+     * companion XML editor. Without this, Problems → File stays empty until the XML tab
+     * is selected.
+     */
+    private fun xmlTextEditor(): TextEditor? {
+        if (project.isDisposed || !file.isValid) return null
+        return FileEditorManager.getInstance(project).getEditors(file)
+            .filterIsInstance<TextEditor>()
+            .firstOrNull { !it.editor.isDisposed }
+    }
+
+    override fun getEmbeddedEditors(): List<Editor> {
+        val editor = xmlTextEditor()?.editor ?: return emptyList()
+        return listOf(editor)
+    }
+
+    override fun getBackgroundHighlighter(): BackgroundEditorHighlighter? {
+        return xmlTextEditor()?.backgroundHighlighter
+    }
+
+    override fun selectNotify() {
+        requestProblemsHighlight()
+    }
+
+    private fun requestProblemsHighlight(retryIfXmlMissing: Boolean = true) {
+        if (project.isDisposed || !file.isValid) return
+        if (xmlTextEditor() == null) {
+            if (retryIfXmlMissing) {
+                SwingUtilities.invokeLater { requestProblemsHighlight(retryIfXmlMissing = false) }
+            }
+            return
+        }
+        val psi = ApplicationManager.getApplication().runReadAction(Computable {
+            if (project.isDisposed || !file.isValid) null
+            else PsiManager.getInstance(project).findFile(file)
+        }) ?: return
+        DaemonCodeAnalyzer.getInstance(project).restart(psi, "BpmnFileEditor.open")
     }
 
     override fun getComponent(): JComponent = panel
