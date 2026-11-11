@@ -147,6 +147,109 @@
     .bts-toggle-mode:hover,
     .bjs-container.simulation .bts-toggle-mode:hover { background: var(--hover) !important; color: var(--fg) !important; border-color: var(--border) !important; }
     .bjs-container.simulation .bts-toggle-mode:hover { border-color: var(--token-sim-on-border) !important; }
+
+    .editor-top-toolbar {
+      position: absolute !important;
+      top: 16px !important;
+      left: 20px !important;
+      z-index: 1000 !important;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .editor-top-toolbar > * { pointer-events: auto; }
+    .editor-top-toolbar .bts-toggle-mode {
+      position: relative !important;
+      top: auto !important;
+      left: auto !important;
+    }
+    .bpmn-export-btn {
+      display: inline-flex !important;
+      align-items: center;
+      box-sizing: border-box;
+      min-height: 28px;
+      height: 28px;
+      background: var(--palette) !important;
+      color: var(--palette-fg) !important;
+      border: 1px solid var(--palette-border) !important;
+      border-radius: 6px;
+      padding: 4px 10px !important;
+      font-size: 13px !important;
+      line-height: 1;
+      cursor: pointer;
+      user-select: none;
+      font-family: inherit;
+    }
+    .bpmn-export-btn:hover {
+      background: var(--hover) !important;
+      color: var(--fg) !important;
+      border-color: var(--border) !important;
+    }
+    .bpmn-export-btn:focus-visible {
+      outline: 2px solid var(--accent, #3574F0);
+      outline-offset: 1px;
+    }
+
+    .bpmn-export { position: relative; display: inline-flex; }
+    .bpmn-export-menu {
+      display: none;
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      min-width: 188px;
+      z-index: 1001;
+      box-sizing: border-box;
+      background: var(--palette);
+      color: var(--palette-fg);
+      border: 1px solid var(--palette-border);
+      border-radius: 6px;
+      padding: 4px;
+      box-shadow: 0 8px 20px rgba(0,0,0,.2);
+    }
+    .bpmn-export.open .bpmn-export-menu { display: block; }
+    .bpmn-export-menu button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border: none;
+      color: inherit;
+      font-family: inherit;
+      font-size: 13px;
+      line-height: 1.3;
+      padding: 6px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .bpmn-export-menu button:hover,
+    .bpmn-export-menu button:focus-visible {
+      background: var(--hover);
+      color: var(--fg);
+      outline: none;
+    }
+    .bpmn-lint-tooltip {
+      position: fixed;
+      z-index: 10000;
+      transform: translate(-50%, calc(-100% - 8px));
+      max-width: 280px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      background: #2B2D30;
+      color: #F2F4F7;
+      border: 1px solid #6A7380;
+      box-shadow: 0 8px 20px rgba(0,0,0,.35);
+      font-size: 12px;
+      line-height: 1.35;
+      pointer-events: none;
+      white-space: pre-wrap;
+    }
+    html:not(.dark) .bpmn-lint-tooltip {
+      background: #FFFFFF;
+      color: #1E1F22;
+      border-color: #D3D5DB;
+      box-shadow: 0 8px 20px rgba(0,0,0,.12);
+    }
     .djs-overlay-bts-context-menu .bts-context-pad,
     .djs-overlay-bts-context-menu .bts-context-pad:not(.disabled),
     .bts-context-pad,
@@ -271,6 +374,10 @@
       box-shadow: 0 0 0 1px rgba(0,0,0,.28);
       cursor: pointer;
       pointer-events: auto;
+      box-sizing: content-box;
+      padding: 5px;
+      margin: -5px;
+      background-clip: content-box;
     }
     .bpmn-lint-error { background: #E5484D; }
     .bpmn-lint-warning { background: #EF9F27; }
@@ -344,13 +451,97 @@
     window.modeler = modeler;
     try { var grid = modeler.get("grid"); if (grid && grid.setVisible) grid.setVisible(false); } catch (e) {}
     try { modeler.get("toggleMode"); } catch (err) { console.error("token simulation module missing", err); }
+    function ensureEditorToolbar() {
+      var canvas = document.getElementById("canvas");
+      if (!canvas) return;
+      var bar = document.getElementById("editor-top-toolbar");
+      if (!bar) {
+        bar = document.createElement("div");
+        bar.id = "editor-top-toolbar";
+        bar.className = "editor-top-toolbar";
+        bar.setAttribute("role", "toolbar");
+        bar.setAttribute("aria-label", "Diagram tools");
+        canvas.appendChild(bar);
+      }
+      var sim = canvas.querySelector(".bts-toggle-mode");
+      if (sim && sim.parentElement !== bar) bar.insertBefore(sim, bar.firstChild);
+      if (!bar.querySelector(".bpmn-export")) {
+        var wrap = document.createElement("div");
+        wrap.className = "bpmn-export";
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "bpmn-export-btn";
+        btn.textContent = "Export";
+        btn.title = "Export diagram";
+        btn.setAttribute("aria-label", "Export diagram");
+        btn.setAttribute("aria-haspopup", "menu");
+        btn.setAttribute("aria-expanded", "false");
+        var menu = document.createElement("div");
+        menu.className = "bpmn-export-menu";
+        menu.setAttribute("role", "menu");
+        menu.hidden = true;
+        function closeExportMenu() {
+          wrap.classList.remove("open");
+          btn.setAttribute("aria-expanded", "false");
+          menu.hidden = true;
+        }
+        function openExportMenu() {
+          wrap.classList.add("open");
+          btn.setAttribute("aria-expanded", "true");
+          menu.hidden = false;
+        }
+        function addItem(format, label) {
+          var item = document.createElement("button");
+          item.type = "button";
+          item.setAttribute("role", "menuitem");
+          item.textContent = label;
+          item.addEventListener("click", function (ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            closeExportMenu();
+            if (window.__exportDiagram) window.__exportDiagram(format);
+          });
+          menu.appendChild(item);
+        }
+        addItem("svg", "Export as SVG…");
+        addItem("png", "Export as PNG…");
+        btn.addEventListener("click", function (ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          if (wrap.classList.contains("open")) closeExportMenu();
+          else openExportMenu();
+        });
+        btn.addEventListener("keydown", function (ev) {
+          if (ev.key === "Escape") { closeExportMenu(); btn.focus(); }
+          if (ev.key === "ArrowDown") {
+            ev.preventDefault();
+            if (!wrap.classList.contains("open")) openExportMenu();
+            var first = menu.querySelector("button");
+            if (first) first.focus();
+          }
+        });
+        document.addEventListener("click", function (ev) {
+          if (!wrap.contains(ev.target)) closeExportMenu();
+        });
+        document.addEventListener("keydown", function (ev) {
+          if (ev.key === "Escape" && wrap.classList.contains("open")) closeExportMenu();
+        });
+        wrap.appendChild(btn);
+        wrap.appendChild(menu);
+        bar.appendChild(wrap);
+      }
+    }
     window.setTimeout(function () {
-      if (document.querySelector(".bts-toggle-mode")) return;
-      var fallback = document.createElement("button");
-      fallback.type = "button"; fallback.className = "bts-toggle-mode"; fallback.textContent = "Token Simulation";
-      fallback.addEventListener("click", function () { try { modeler.get("toggleMode").toggleMode(); } catch (e) {} });
-      document.getElementById("canvas").appendChild(fallback);
+      if (!document.querySelector(".bts-toggle-mode")) {
+        var fallback = document.createElement("button");
+        fallback.type = "button"; fallback.className = "bts-toggle-mode"; fallback.textContent = "Token Simulation";
+        fallback.addEventListener("click", function () { try { modeler.get("toggleMode").toggleMode(); } catch (e) {} });
+        document.getElementById("canvas").appendChild(fallback);
+      }
+      ensureEditorToolbar();
     }, 0);
+    window.setTimeout(ensureEditorToolbar, 50);
+    window.setTimeout(ensureEditorToolbar, 250);
     var applying = false;
     var simulating = false;
     var lastAppliedXml = null;
@@ -437,20 +628,71 @@
         var target = badgeTargetId(issue.elementId);
         if (!target) return;
         var prev = byId[target];
-        if (!prev || (issue.level === "error" && prev.level !== "error")) {
-          byId[target] = { level: issue.level, message: issue.message, elementId: target };
+        if (!prev) {
+          byId[target] = { level: issue.level, messages: [issue.message], elementId: target };
+        } else {
+          if (issue.level === "error" && prev.level !== "error") prev.level = "error";
+          if (prev.messages.indexOf(issue.message) === -1) prev.messages.push(issue.message);
         }
       });
       Object.keys(byId).forEach(function (id) {
         var issue = byId[id];
         try {
-          var html = '<span class="bpmn-lint-mark bpmn-lint-' + issue.level + '" title="' + escAttr(issue.message) +
-            '" role="button" tabindex="0" onclick="window.__selectElement && window.__selectElement(\'' + id.replace(/'/g, "\\'") +
+          var tip = issue.messages.join("\n");
+          var html = '<span class="bpmn-lint-mark bpmn-lint-' + issue.level + '" title="' + escAttr(tip) +
+            '" data-tip="' + escAttr(tip) +
+            '" role="button" tabindex="0" aria-label="' + escAttr(tip) +
+            '" onclick="window.__selectElement && window.__selectElement(\'' + id.replace(/'/g, "\\'") +
             '\');event.stopPropagation();"></span>';
           overlays.add(id, "lint", { position: { top: -3, right: -3 }, html: html });
         } catch (e) {}
       });
     }
+    (function lintTipDelegate() {
+      var tipEl = null;
+      function hideLintTip() {
+        if (tipEl) tipEl.style.display = "none";
+      }
+      function showLintTip(anchor, text) {
+        if (!text) return;
+        if (!tipEl) {
+          tipEl = document.createElement("div");
+          tipEl.className = "bpmn-lint-tooltip";
+          tipEl.setAttribute("role", "tooltip");
+          document.body.appendChild(tipEl);
+        }
+        tipEl.textContent = text;
+        tipEl.style.display = "block";
+        var r = anchor.getBoundingClientRect();
+        tipEl.style.left = (r.left + r.width / 2) + "px";
+        tipEl.style.top = r.top + "px";
+        var tr = tipEl.getBoundingClientRect();
+        if (tr.left < 8) tipEl.style.left = (r.left + r.width / 2 - tr.left + 8) + "px";
+        else if (tr.right > window.innerWidth - 8) tipEl.style.left = (r.left + r.width / 2 - (tr.right - (window.innerWidth - 8))) + "px";
+        if (tr.top < 8) tipEl.style.transform = "translate(-50%, 10px)";
+        else tipEl.style.transform = "translate(-50%, calc(-100% - 8px))";
+      }
+      document.addEventListener("mouseover", function (e) {
+        var mark = e.target && e.target.closest && e.target.closest(".bpmn-lint-mark");
+        if (mark) showLintTip(mark, mark.getAttribute("data-tip") || mark.getAttribute("title") || "");
+      });
+      document.addEventListener("mouseout", function (e) {
+        var mark = e.target && e.target.closest && e.target.closest(".bpmn-lint-mark");
+        if (!mark) return;
+        var to = e.relatedTarget;
+        if (to && mark.contains(to)) return;
+        hideLintTip();
+      });
+      document.addEventListener("focusin", function (e) {
+        var mark = e.target && e.target.closest && e.target.closest(".bpmn-lint-mark");
+        if (mark) showLintTip(mark, mark.getAttribute("data-tip") || mark.getAttribute("title") || "");
+      });
+      document.addEventListener("focusout", function (e) {
+        var mark = e.target && e.target.closest && e.target.closest(".bpmn-lint-mark");
+        if (mark) hideLintTip();
+      });
+    })();
+
     var persistTimer = null;
     // Only write XML back after a real user edit. Import / post-import repair
     // must not autosave a cleaned model over fixtures (dangling refs, edge DI).
@@ -545,6 +787,11 @@
     };
     // Camunda Cloud sequence-flow setValue replaces FormalExpression with {body} only,
     // dropping language="feel". Stamp it back in preExecute so undo/redo XML stays valid.
+    // Also collapse a doubled leading "=" (FEEL indicator + body already starting with "=").
+    function normalizeFeelBody(body) {
+      if (typeof body !== "string") return body;
+      return body.replace(/^\s*={2,}/, "=");
+    }
     try {
       modeler.get("eventBus").on("commandStack.element.updateProperties.preExecute", function (e) {
         var ctx = e && e.context;
@@ -553,16 +800,44 @@
         if (!expr) return;
         try {
           if (typeof expr.get === "function") {
-            if (expr.get("language")) return;
-            if (expr.get("body") == null || expr.get("body") === "") return;
-            expr.set("language", "feel");
-          } else if (!expr.language) {
+            var bodyGet = expr.get("body");
+            if (bodyGet == null || bodyGet === "") return;
+            if (!expr.get("language")) expr.set("language", "feel");
+            var normGet = normalizeFeelBody(bodyGet);
+            if (normGet !== bodyGet) expr.set("body", normGet);
+          } else {
             if (expr.body == null || expr.body === "") return;
-            expr.language = "feel";
+            if (!expr.language) expr.language = "feel";
+            var normBody = normalizeFeelBody(expr.body);
+            if (normBody !== expr.body) expr.body = normBody;
           }
         } catch (err) {}
       });
     } catch (e) {}
+    function syncFeelIndicator() {
+      var roots = document.querySelectorAll(".bio-properties-panel-feel-entry, .bio-properties-panel-feel-popup, .bio-properties-panel-feel-container");
+      for (var i = 0; i < roots.length; i++) {
+        var root = roots[i];
+        var cm = root.querySelector(".cm-content");
+        var ind = root.querySelector(".bio-properties-panel-feel-indicator");
+        if (!ind) continue;
+        var text = cm && (cm.textContent || "").replace(/^\s+/, "");
+        ind.hidden = !!(text && text.charAt(0) === "=");
+      }
+    }
+    var feelIndTimer = null;
+    function scheduleFeelIndicatorSync() {
+      if (feelIndTimer) return;
+      feelIndTimer = window.setTimeout(function () { feelIndTimer = null; syncFeelIndicator(); }, 0);
+    }
+    try {
+      var feelObs = new MutationObserver(scheduleFeelIndicatorSync);
+      feelObs.observe(document.body, { subtree: true, childList: true, characterData: true });
+    } catch (eFeelObs) {}
+    try {
+      modeler.get("eventBus").on("propertiesPanel.updated", scheduleFeelIndicatorSync);
+      modeler.get("eventBus").on("propertiesPanelPopup.open", scheduleFeelIndicatorSync);
+    } catch (eFeelEv) {}
     // Closing the FEEL pop-out must flush the same debounce (text popup already does).
     try {
       modeler.get("eventBus").on("propertiesPanelPopup.close", function () {
@@ -767,8 +1042,10 @@
     }, true);
     function fit() { try { modeler.get("canvas").zoom("fit-viewport", "auto"); } catch (e) {} }
     window.__fit = fit;
-    window.__applyTheme = function (t) {
-      var root = document.documentElement; var dark = !!t.dark;
+    var lastUserTheme = { dark: false, hc: false };
+    function applyThemeInternal(t, remember) {
+      if (remember !== false) lastUserTheme = t || lastUserTheme;
+      var root = document.documentElement; var dark = !!(t && t.dark);
       root.classList.toggle("dark", dark); root.classList.toggle("hc", !!t.hc); root.classList.remove("dark-diagram");
       ["bg","panel","fg","muted","border","input","hover","accent"].forEach(function (k) { if (t[k]) root.style.setProperty("--" + k, t[k]); });
       var fill, stroke, label, canvas, panel, palette;
@@ -777,6 +1054,113 @@
       if (t.bg) root.style.setProperty("--bg", t.bg); else root.style.setProperty("--bg", panel);
       try { var renderer = modeler.get("bpmnRenderer"); if (renderer) { renderer.defaultFillColor = fill; renderer.defaultStrokeColor = stroke; renderer.defaultLabelColor = label; } } catch (e) {}
       try { var registry = modeler.get("elementRegistry"); var gfxFactory = modeler.get("graphicsFactory"); var canvasSvc = modeler.get("canvas"); var rootEl = canvasSvc.getRootElement(); registry.forEach(function (el) { if (!el || el === rootEl) return; var gfx = registry.getGraphics(el); if (!gfx) return; var type = el.waypoints ? "connection" : "shape"; try { gfxFactory.update(type, el, gfx); } catch (err) {} }); } catch (e) {}
+    }
+    window.__applyTheme = function (t) { applyThemeInternal(t, true); };
+    function addSvgPaddingAndBackground(svg) {
+      var vb = /viewBox="([^"]+)"/.exec(svg);
+      if (!vb) return svg;
+      var parts = vb[1].trim().split(/[\s,]+/).map(Number);
+      var x = parts[0] || 0, y = parts[1] || 0, w = parts[2] || 0, h = parts[3] || 0;
+      if (!w || !h) return svg;
+      var pad = 16;
+      var nx = x - pad, ny = y - pad, nw = w + pad * 2, nh = h + pad * 2;
+      svg = svg.replace(/viewBox="[^"]+"/, 'viewBox="' + nx + " " + ny + " " + nw + " " + nh + '"');
+      var rect = '<rect class="bpmn-export-bg" x="' + nx + '" y="' + ny + '" width="' + nw + '" height="' + nh + '" fill="#FFFFFF"/>';
+      if (svg.indexOf('class="bpmn-export-bg"') === -1) {
+        svg = svg.replace(/<svg([^>]*)>/, "<svg$1>" + rect);
+      }
+      return svg;
+    }
+    function resolveCssVarsInSvg(svg) {
+      var style = getComputedStyle(document.documentElement);
+      ["icon", "label", "shape-fill", "flow", "canvas"].forEach(function (k) {
+        var val = (style.getPropertyValue("--" + k) || "").trim();
+        if (val) svg = svg.split("var(--" + k + ")").join(val);
+      });
+      return svg;
+    }
+    function stripNonDiagramFromSvg(svg) {
+      // Safety net: saveSVG should already omit HTML chrome. Drop leftover selection/outline/hit/bendpoint markup.
+      return svg
+        .replace(/<g[^>]*class="[^"]*djs-outline[^"]*"[^>]*>[\s\S]*?<\/g>/g, "")
+        .replace(/<g[^>]*class="[^"]*djs-bendpoint[^"]*"[^>]*>[\s\S]*?<\/g>/g, "")
+        .replace(/<g[^>]*class="[^"]*djs-hit[^"]*"[^>]*\/>/g, "")
+        .replace(/\sclass="([^"]*)"/g, function (m, cls) {
+          var cleaned = cls.replace(/\bselected\b/g, "").replace(/\s+/g, " ").trim();
+          return cleaned ? ' class="' + cleaned + '"' : "";
+        });
+    }
+    function svgToPngBase64(svg) {
+      return new Promise(function (resolve, reject) {
+        var blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+        var url = URL.createObjectURL(blob);
+        var img = new Image();
+        img.onload = function () {
+          try {
+            var scale = 2;
+            var w = img.naturalWidth || img.width || 1;
+            var h = img.naturalHeight || img.height || 1;
+            var canvas = document.createElement("canvas");
+            canvas.width = Math.max(1, Math.round(w * scale));
+            canvas.height = Math.max(1, Math.round(h * scale));
+            var ctx = canvas.getContext("2d");
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            var data = canvas.toDataURL("image/png");
+            resolve(data.replace(/^data:image\/png;base64,/, ""));
+          } catch (err) {
+            reject(err);
+          } finally {
+            URL.revokeObjectURL(url);
+          }
+        };
+        img.onerror = function () {
+          URL.revokeObjectURL(url);
+          reject(new Error("Failed to rasterize SVG"));
+        };
+        img.src = url;
+      });
+    }
+    window.__buildExportPayload = async function (format) {
+      var selection = null, prevSel = [];
+      var overlayRoot = document.querySelector(".djs-overlay-container");
+      var prevOverlay = overlayRoot ? overlayRoot.style.display : "";
+      var wasSimulating = simulating;
+      try {
+        try {
+          selection = modeler.get("selection");
+          prevSel = selection.get ? selection.get() : [];
+          if (selection.select) selection.select([]);
+        } catch (eSel) {}
+        if (overlayRoot) overlayRoot.style.display = "none";
+        if (wasSimulating) {
+          try { modeler.get("toggleMode").toggleMode(false); } catch (eSim) {}
+        }
+        applyThemeInternal({ dark: false, hc: false }, false);
+        await new Promise(function (r) { requestAnimationFrame(function () { requestAnimationFrame(r); }); });
+        var result = await modeler.saveSVG();
+        var svg = stripNonDiagramFromSvg(resolveCssVarsInSvg(addSvgPaddingAndBackground(result.svg || "")));
+        if (format === "png") return { format: "png", data: await svgToPngBase64(svg) };
+        return { format: "svg", data: svg };
+      } finally {
+        if (overlayRoot) overlayRoot.style.display = prevOverlay;
+        try { if (selection && selection.select) selection.select(prevSel); } catch (eResel) {}
+        if (wasSimulating && !simulating) {
+          try { modeler.get("toggleMode").toggleMode(true); } catch (eSim2) {}
+        }
+        applyThemeInternal(lastUserTheme, false);
+      }
+    };
+    window.__exportDiagram = async function (format) {
+      if (!window.__onExport) return;
+      try {
+        var payload = await window.__buildExportPayload(format === "png" ? "png" : "svg");
+        window.__onExport(payload.format + "\n" + payload.data);
+      } catch (err) {
+        console.error("export failed", err);
+        if (window.__onExportError) window.__onExportError(String(err && err.message ? err.message : err));
+      }
     };
     (function setupConnectionContextPad() {
       var lastClick = null;

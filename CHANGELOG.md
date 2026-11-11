@@ -1,5 +1,13 @@
 # Changelog
 
+## [Unreleased]
+
+- Export SVG / PNG: one Export button in the Token Simulation toolbar band, menu “Export as SVG…” / “Export as PNG…”; default filename from the diagram; always render on a light canvas; crop to bounds with padding; PNG at 2x; diagram only (no palette, properties, pads, Token Sim, lint marks, or selection); cancel is silent; success is a short IDE notification; unsaved edits export the current canvas
+- Lint badge hover tooltip (including Start-event red dots) so the message is readable over the 6px mark in JCEF
+- FEEL pop-out: hide the extra `=` indicator when the expression body already starts with `=`; collapse a doubled leading `=` on write
+- Problems: suppress XML “URI is not registered” for BPMN, Zeebe, and modeler namespaces
+- Dirty “File changed on disk” dialog: ignore VFS echoes from our own save so the first Ctrl+Z after persist is not swallowed; restore canvas focus when the dialog closes
+
 ## [0.4.6]
 
 - Problems Current File: highlight on BPMN-tab open via `FileEditorWithTextEditors` + daemon restart, so lint appears without switching to XML

@@ -62,6 +62,10 @@ import com.intellij.openapi.vfs.newvfs.events.VFileContentChangeEvent
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.ui.Messages
+import com.intellij.notification.NotificationGroupManager
+import com.intellij.notification.NotificationType
+import com.intellij.openapi.fileChooser.FileChooserFactory
+import com.intellij.openapi.fileChooser.FileSaverDescriptor
 
 class BpmnFileEditor(
     private val project: Project,
@@ -76,12 +80,14 @@ class BpmnFileEditor(
     private var diagramActive = true
     private var askingReload = false
     private var expectExternalChange = false
+    private var ignoreExternalUntilMs = 0L
     private val themeConnection = project.messageBus.connect()
     private val documentListener = object : DocumentListener {
         override fun documentChanged(event: DocumentEvent) {
             if (applyingFromJs || !loaded || !diagramActive) return
             if (expectExternalChange) {
                 expectExternalChange = false
+                if (System.currentTimeMillis() < ignoreExternalUntilMs) return
                 SwingUtilities.invokeLater { askReloadFromDisk() }
                 return
             }
@@ -152,6 +158,20 @@ class BpmnFileEditor(
                     JBCefJSQuery.Response("")
                 }
             }
+            val exportQuery = JBCefJSQuery.create(b as JBCefBrowserBase)
+            Disposer.register(b, exportQuery)
+            exportQuery.addHandler { payload ->
+                val text = decodeXmlPayload(payload)
+                onEdt { handleExportPayload(text) }
+                null
+            }
+            val exportErrorQuery = JBCefJSQuery.create(b as JBCefBrowserBase)
+            Disposer.register(b, exportErrorQuery)
+            exportErrorQuery.addHandler { payload ->
+                val msg = decodeXmlPayload(payload)
+                onEdt { notifyExport("Could not export the diagram" + if (msg.isBlank()) "." else ": $msg", error = true) }
+                null
+            }
             b.jbCefClient.addLoadHandler(object : CefLoadHandlerAdapter() {
                 override fun onLoadEnd(br: CefBrowser?, frame: CefFrame?, status: Int) {
                     if (frame == null || !frame.isMain) return
@@ -174,6 +194,12 @@ class BpmnFileEditor(
                             "function(response){if(response){window.__diagramPasteFromSystemClip&&window.__diagramPasteFromSystemClip(response);}}",
                             "function(c,m){}",
                         ) +
+                        " };" +
+                        "window.__onExport = function(payload) { " +
+                        exportQuery.inject("JSON.stringify(payload)") +
+                        " };" +
+                        "window.__onExportError = function(msg) { " +
+                        exportErrorQuery.inject("JSON.stringify(msg)") +
                         " };"
                     br?.executeJavaScript(inject, br.url, 0)
                     SwingUtilities.invokeLater {
@@ -241,7 +267,10 @@ class BpmnFileEditor(
             themeConnection.subscribe(VirtualFileManager.VFS_CHANGES, object : BulkFileListener {
                 override fun after(events: List<VFileEvent>) {
                     for (event in events) {
-                        if (event is VFileContentChangeEvent && event.file == file && !applyingFromJs) {
+                        if (event is VFileContentChangeEvent && event.file == file &&
+                            !applyingFromJs &&
+                            System.currentTimeMillis() >= ignoreExternalUntilMs
+                        ) {
                             expectExternalChange = true
                         }
                     }
@@ -343,6 +372,7 @@ class BpmnFileEditor(
     private fun writeXmlFromJs(xml: String) {
         if (!file.isValid) return
         applyingFromJs = true
+        ignoreExternalUntilMs = System.currentTimeMillis() + 1000
         try {
             val manager = FileDocumentManager.getInstance()
             val doc = manager.getDocument(file)
@@ -364,6 +394,52 @@ class BpmnFileEditor(
         } finally {
             applyingFromJs = false
         }
+    }
+
+    private fun handleExportPayload(payload: String) {
+        val nl = payload.indexOf('\n')
+        if (nl <= 0) return
+        val format = payload.substring(0, nl).trim().lowercase()
+        val data = payload.substring(nl + 1)
+        if (format != "svg" && format != "png") return
+        val bytes = if (format == "png") {
+            try {
+                Base64.getDecoder().decode(data.filter { !it.isWhitespace() })
+            } catch (_: IllegalArgumentException) {
+                notifyExport("Could not export PNG.", error = true)
+                return
+            }
+        } else {
+            data.toByteArray(Charsets.UTF_8)
+        }
+        val descriptor = FileSaverDescriptor(
+            if (format == "png") "Export PNG" else "Export SVG",
+            if (format == "png") "PNG for chat and slides (light canvas)" else "SVG for documents and print (light canvas)",
+            format,
+        )
+        val dialog = FileChooserFactory.getInstance().createSaveFileDialog(descriptor, project)
+        val suggested = file.nameWithoutExtension + "." + format
+        val wrapper = file.parent?.let { dialog.save(it, suggested) } ?: dialog.save(suggested)
+        if (wrapper == null) return
+        try {
+            val io = wrapper.file
+            io.parentFile?.mkdirs()
+            io.writeBytes(bytes)
+            wrapper.getVirtualFile(true)
+            notifyExport("Exported ${io.name}")
+        } catch (_: Exception) {
+            notifyExport("Could not write ${wrapper.file.name}.", error = true)
+        }
+    }
+
+    private fun notifyExport(message: String, error: Boolean = false) {
+        NotificationGroupManager.getInstance()
+            .getNotificationGroup("Forge BPMN")
+            .createNotification(
+                message,
+                if (error) NotificationType.ERROR else NotificationType.INFORMATION,
+            )
+            .notify(project)
     }
 
     private fun jsString(value: String): String {
@@ -513,6 +589,10 @@ class BpmnFileEditor(
             }
         } finally {
             askingReload = false
+            SwingUtilities.invokeLater {
+                val b = browser ?: return@invokeLater
+                b.component.requestFocusInWindow()
+            }
         }
     }
 
