@@ -36,6 +36,12 @@
        purpose: FileEditorProvider must remain here so 2025.3.0 Community (JCEF in the
        platform, no jcef module alias) still opens the BPMN canvas. -->
   <depends optional="true" config-file="forge-bpmn-jcef.xml">com.intellij.modules.jcef</depends>
+  <!-- Optional: Problems View was extracted from the core plugin in 2026.3
+       (plugin id com.intellij.problemsView). Without this, BpmnProblemsSelectionHook
+       throws NoClassDefFoundError on ToolWindowManager.stateChanged.
+       config-file is required when optional="true". The extra descriptor stays empty
+       on purpose: 2025.3 has ProblemsView in the platform and no such plugin alias. -->
+  <depends optional="true" config-file="forge-bpmn-problems.xml">com.intellij.problemsView</depends>
 
   <extensions defaultExtensionNs="com.intellij">
     <fileType name="BPMN"

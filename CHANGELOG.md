@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.6.1]
+
+- IntelliJ 2026.3: optional dependency on the bundled Problems View plugin (`com.intellij.problemsView`) so Problems single-click still works after the platform extracted that plugin; if the API is missing, skip the hook instead of crashing the EDT on tool-window updates
+
 ## [0.4.6]
 
 - Problems Current File: highlight on BPMN-tab open via `FileEditorWithTextEditors` + daemon restart, so lint appears without switching to XML
