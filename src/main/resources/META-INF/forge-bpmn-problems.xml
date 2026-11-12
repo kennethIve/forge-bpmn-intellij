@@ -1,0 +1,8 @@
+<!-- Additional descriptor required by optional="true" on com.intellij.problemsView.
+     Loaded only when that bundled plugin is present (2026.3+).
+     Keep this file empty of extensions: 2025.3 still has ProblemsView in the
+     platform and does not expose the com.intellij.problemsView plugin id. -->
+<idea-plugin>
+  <extensions defaultExtensionNs="com.intellij">
+  </extensions>
+</idea-plugin>

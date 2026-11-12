@@ -7,6 +7,7 @@
 - FEEL pop-out: hide the extra `=` indicator when the expression body already starts with `=`; collapse a doubled leading `=` on write
 - Problems: suppress XML “URI is not registered” for BPMN, Zeebe, and modeler namespaces
 - Dirty “File changed on disk” dialog: ignore VFS echoes from our own save so the first Ctrl+Z after persist is not swallowed; restore canvas focus when the dialog closes
+- IntelliJ 2026.3: optional dependency on the bundled Problems View plugin (`com.intellij.problemsView`) so Problems single-click still works after the platform extracted that plugin; if the API is missing, skip the hook instead of crashing the EDT on tool-window updates
 
 ## [0.4.6]
 

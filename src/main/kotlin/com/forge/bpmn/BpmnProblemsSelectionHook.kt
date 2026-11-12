@@ -4,6 +4,7 @@ import com.intellij.analysis.problemsView.toolWindow.ProblemNode
 import com.intellij.analysis.problemsView.toolWindow.ProblemsView
 import com.intellij.analysis.problemsView.toolWindow.ProblemsViewPanel
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.util.Computable
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.fileEditor.FileDocumentManager
@@ -47,6 +48,28 @@ object BpmnProblemsSelectionHook {
     private const val TREE_AWT_PROP = "forge.bpmn.problems.tree.awt"
     /** How long after a mouse-press on the tree we treat selection changes as user-driven. */
     private const val USER_GESTURE_MS = 750L
+    private val LOG = Logger.getInstance(BpmnProblemsSelectionHook::class.java)
+    private val UNAVAILABLE = Key.create<Boolean>("forge.bpmn.problems.hook.unavailable")
+
+    /**
+     * On 2026.3, Problems View lives in the bundled plugin `com.intellij.problemsView`.
+     * If that plugin is missing or not a classloader parent, [ProblemsView] resolution
+     * throws [NoClassDefFoundError] — catch it so a tool-window state change cannot
+     * take down the EDT. After the first failure, skip further attempts.
+     */
+    private fun runProblemsHook(project: Project, action: () -> Unit) {
+        if (project.isDisposed) return
+        if (project.getUserData(UNAVAILABLE) == true) return
+        try {
+            action()
+        } catch (t: LinkageError) {
+            project.putUserData(UNAVAILABLE, true)
+            LOG.warn("Problems View API is not visible; skipping click-to-select hook", t)
+        } catch (t: ClassNotFoundException) {
+            project.putUserData(UNAVAILABLE, true)
+            LOG.warn("Problems View API is not visible; skipping click-to-select hook", t)
+        }
+    }
 
     fun install(project: Project) {
         if (project.isDisposed) return
@@ -56,30 +79,34 @@ object BpmnProblemsSelectionHook {
         val connection = project.messageBus.connect(project)
         connection.subscribe(ToolWindowManagerListener.TOPIC, object : ToolWindowManagerListener {
             override fun toolWindowShown(toolWindow: ToolWindow) {
-                if (toolWindow.id == ProblemsView.ID) {
-                    attachAll(project)
+                runProblemsHook(project) {
+                    if (toolWindow.id == ProblemsView.ID) {
+                        attachAll(project)
+                    }
                 }
             }
 
             override fun stateChanged(toolWindowManager: com.intellij.openapi.wm.ToolWindowManager) {
-                attachAll(project)
+                runProblemsHook(project) { attachAll(project) }
             }
         })
 
-        ProblemsView.getToolWindow(project)?.contentManager?.addContentManagerListener(
-            object : ContentManagerListener {
-                override fun contentAdded(event: ContentManagerEvent) {
-                    attachAll(project)
-                }
+        runProblemsHook(project) {
+            ProblemsView.getToolWindow(project)?.contentManager?.addContentManagerListener(
+                object : ContentManagerListener {
+                    override fun contentAdded(event: ContentManagerEvent) {
+                        runProblemsHook(project) { attachAll(project) }
+                    }
 
-                override fun selectionChanged(event: ContentManagerEvent) {
-                    attachAll(project)
-                }
-            },
-        )
+                    override fun selectionChanged(event: ContentManagerEvent) {
+                        runProblemsHook(project) { attachAll(project) }
+                    }
+                },
+            )
+        }
 
         ApplicationManager.getApplication().invokeLater(
-            { attachAll(project) },
+            { runProblemsHook(project) { attachAll(project) } },
             ModalityState.any(),
             project.disposed,
         )
